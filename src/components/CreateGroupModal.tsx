@@ -22,7 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
-import type { CreateGroupModalProps, TUser } from "../types";
+import type { CreateGroupModalProps, TGroupMember, TUser } from "../types";
 
 export default function CreateGroupModal({
   open,
@@ -31,26 +31,27 @@ export default function CreateGroupModal({
   onSave,
 }: CreateGroupModalProps) {
   const [groupName, setGroupName] = useState("");
-  const [members, setMembers] = useState<TUser[]>([]);
+  const [members, setMembers] = useState<TGroupMember[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<TUser[]>([]);
 
   const handleAddMembers = () => {
-    const newMembers = selectedMembers.filter(
-      (sm) => !members.some((m) => m.id === sm.id)
-    );
-    if (newMembers.length > 0) {
-      setMembers([...members, ...newMembers]);
-      setSelectedMembers([]); // reset selection
+    const toAdd = selectedMembers
+      .filter((sm) => !members.some((m) => m.user_id === sm.user_id))
+      .map((user): TGroupMember => ({ user_id: user.user_id, user }));
+    if (toAdd.length > 0) {
+      setMembers([...members, ...toAdd]);
+      setSelectedMembers([]);
     }
   };
 
   // Filter available members to exclude those already in the group
   const filteredAvailableMembers = availableMembers.filter(
-    (member) => !members.some((m) => m.id === member.id)
+    (member) => !members.some((m) => m.user_id === member.user_id)
   );
 
-  const handleRemoveMember = (memberId: string) => {
-    setMembers(members.filter((m) => m.id !== memberId));
+  const handleRemoveMember = (memberUserId: string) => {
+    console.log(memberUserId);
+    setMembers((prev) => prev.filter((m) => m.user.user_id !== memberUserId));
   };
 
   const handleSave = async () => {
@@ -113,7 +114,7 @@ export default function CreateGroupModal({
               sx={{ flex: 1 }}
               options={filteredAvailableMembers}
               getOptionLabel={(option) =>
-                `${option.firstName} ${option.lastName}`
+                `${option.first_name} ${option.last_name}`
               }
               value={selectedMembers}
               onChange={(_, newValue) =>
@@ -134,7 +135,7 @@ export default function CreateGroupModal({
                   >
                     {option.avatar}
                   </Avatar>
-                  <p>{`${option.firstName} ${option.lastName}`}</p>
+                  <p>{`${option.first_name} ${option.last_name}`}</p>
                 </Box>
               )}
               noOptionsText="Nema dostupnih članova"
@@ -179,20 +180,23 @@ export default function CreateGroupModal({
               }}
             >
               {members.map((member, index) => (
-                <ListItem key={member.id} divider={index < members.length - 1}>
+                <ListItem
+                  key={member.user_id}
+                  divider={index < members.length - 1}
+                >
                   <ListItemAvatar>
                     <Avatar sx={{ bgcolor: "primary.main" }}>
-                      {member.avatar}
+                      {member.user.avatar}
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText
-                    primary={`${member.firstName} ${member.lastName}`}
+                    primary={`${member.user.first_name} ${member.user.last_name}`}
                     secondary={`Poredak - ${index + 1}`}
                   />
                   <ListItemSecondaryAction>
                     <IconButton
                       edge="end"
-                      onClick={() => handleRemoveMember(member.id)}
+                      onClick={() => handleRemoveMember(member.user.user_id)}
                       color="error"
                       size="small"
                     >

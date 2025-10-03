@@ -1,5 +1,5 @@
 import {
-  Close as CloseIcon,
+  Delete as DeleteIcon,
   Edit as EditIcon,
   Save as SaveIcon,
   Schedule,
@@ -14,14 +14,9 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
-  FormControl,
-  Grid,
-  IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Snackbar,
   Table,
   TableBody,
@@ -29,87 +24,113 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from "@mui/material";
-import { getAuth } from "firebase/auth";
-import { sortBy } from "lodash-es";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useEffect, useState } from "react";
-import useCollection, { getData } from "../hooks/useCollection";
+import dayjs, { Dayjs } from "dayjs";
+import { useAuth } from "../providers/AuthProvider";
 import { useLoader } from "../providers/Loader";
 import { useUsers } from "../providers/UsersProvider";
-import type { TGroup, TMatch } from "../types";
-import { updateItem } from "../utils/updateItem";
+import type { TGroup, TMatch, TUser } from "../types";
+import { supabase } from "../utils/supabase";
+import { generateSchedule } from "../utils/generateSchedule";
+import { EditMatchModal } from "../components/EditMatchModal";
+import { orderBy } from "lodash-es";
+
+type JoinedMatch = TMatch & {
+  player_one: TUser;
+  player_two: TUser;
+  group: TGroup;
+};
 
 export default function Matches() {
-  const [selectedMatch, setSelectedMatch] = useState<TMatch | null>(null);
-  const [matches, setMatches] = useState<TMatch[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<JoinedMatch | null>(null);
+  const [matches, setMatches] = useState<JoinedMatch[]>([]);
   const { users: players } = useUsers();
-  const { data: groups, refresh } = useCollection<TGroup>("groups");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success" as "success" | "error",
   });
   const [modalOpen, setModalOpen] = useState(false);
-  const muiTheme = useTheme();
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
-  const auth = getAuth();
-  const player = players.find((p) => p.id === auth.currentUser?.uid);
+  // Modal styling no longer needs theme hook here
+  const { user } = useAuth();
+  const player = players.find((p) => p.user_id === user?.id);
+  const isAdmin = !!player?.is_admin;
   const [showOnlyMine, setShowOnlyMine] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(dayjs());
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [deleteSingleDialogOpen, setDeleteSingleDialogOpen] = useState(false);
+  const [matchToDelete, setMatchToDelete] = useState<JoinedMatch | null>(null);
   const { setLoading } = useLoader();
 
   useEffect(() => {
-    if (player && player.isAdmin) {
+    if (player && player.is_viewer) {
       setShowOnlyMine(false);
     }
-  }, [auth.currentUser, players]);
+  }, [user?.id, players]);
 
-  const getGroupMatches = async () => {
+  const initialize = async () => {
     setLoading(true);
-    let items: TMatch[] = [];
+    // Load matches with joined users and group
+    const { data: matchesData } = await supabase.from("match").select(
+      `
+        *,
+        player_one:player_one_id (*),
+        player_two:player_two_id (*),
+        group:group_id (*)
+      `
+    );
 
-    for (const group of sortBy(groups, "name")) {
-      const groupMatches = await getData<TMatch>(`groups/${group.id}/matches`);
-      items = items.concat(groupMatches);
+    if (matchesData) {
+      const items = orderBy(matchesData, "group.name") as JoinedMatch[];
+      let filteredMatches = showOnlyMine
+        ? items.filter((t) =>
+            [t.player_one_id, t.player_two_id].includes(user?.id as string)
+          )
+        : items;
+
+      // Filter by selected month if a month is selected
+      if (selectedMonth) {
+        const startOfMonth = selectedMonth.startOf("month");
+        const endOfMonth = selectedMonth.endOf("month");
+
+        filteredMatches = filteredMatches.filter((match) => {
+          // Filter by match creation date or any date field in the match
+          const matchDate = match.created_at
+            ? dayjs(match.created_at?.toDate?.() || match.created_at)
+            : dayjs();
+          return (
+            matchDate.isAfter(startOfMonth) && matchDate.isBefore(endOfMonth)
+          );
+        });
+      }
+
+      setMatches(filteredMatches);
+    } else {
+      setMatches([]);
     }
 
-    const uid = auth.currentUser?.uid;
-    setMatches(
-      showOnlyMine
-        ? items.filter((t) =>
-            [t.playerOneId, t.playerTwoId].includes(uid as string)
-          )
-        : items
-    );
     setLoading(false);
   };
 
   useEffect(() => {
-    getGroupMatches();
-  }, [groups, auth.currentUser, showOnlyMine]);
+    initialize();
+  }, [showOnlyMine, selectedMonth]);
 
-  const getPlayer = (id: string) => {
-    const player = players.find((p) => p.id.toString() === id);
-    return player;
-  };
+  const getPlayer = (id: string) => players.find((p) => p.user_id === id);
 
-  const getPlayerGroup = (playerId: string) => {
-    return groups.find((group) =>
-      group.members.some((member) => member.id === playerId)
-    );
-  };
-
-  const handleMatchSelect = (match: TMatch) => {
+  const handleMatchSelect = (match: JoinedMatch) => {
     setSelectedMatch({ ...match });
     setModalOpen(true);
   };
 
   const calculateSetResult = (match: TMatch) => {
     const hasResults = match.sets.some(
-      (set) => set.playerOneGames > 0 || set.playerTwoGames > 0
+      (set) => set.player_one_games > 0 || set.player_two_games > 0
     );
     if (!hasResults) return "-";
 
@@ -117,9 +138,9 @@ export default function Matches() {
     let playerTwoSets = 0;
 
     match.sets.forEach((set) => {
-      if (set.playerOneGames > set.playerTwoGames) {
+      if (set.player_one_games > set.player_two_games) {
         playerOneSets++;
-      } else if (set.playerTwoGames > set.playerOneGames) {
+      } else if (set.player_two_games > set.player_one_games) {
         playerTwoSets++;
       }
     });
@@ -127,94 +148,106 @@ export default function Matches() {
     return `${playerOneSets} - ${playerTwoSets}`;
   };
 
-  const handleModalClose = () => {
-    setModalOpen(false);
-    setSelectedMatch(null);
-  };
-
-  const handleSetScoreChange = (
-    setIndex: number,
-    player: "one" | "two",
-    value: number
-  ) => {
-    if (!selectedMatch) return;
-
-    const updatedMatch = { ...selectedMatch };
-    if (player === "one") {
-      updatedMatch.sets[setIndex].playerOneGames = Math.max(0, value);
-    } else {
-      updatedMatch.sets[setIndex].playerTwoGames = Math.max(0, value);
-    }
-    setSelectedMatch(updatedMatch);
-  };
-
   const determineWinner = (match: TMatch): string => {
     let playerOneSets = 0;
     let playerTwoSets = 0;
 
     match.sets.forEach((set) => {
-      if (set.playerOneGames > set.playerTwoGames) {
+      if (set.player_one_games > set.player_two_games) {
         playerOneSets++;
-      } else if (set.playerTwoGames > set.playerOneGames) {
+      } else if (set.player_two_games > set.player_one_games) {
         playerTwoSets++;
       }
     });
 
     if (playerOneSets > playerTwoSets) {
-      return match.playerOneId;
+      return match.player_one_id;
     } else if (playerTwoSets > playerOneSets) {
-      return match.playerTwoId;
+      return match.player_two_id;
     } else {
       return "";
     }
   };
 
-  const saveMatchResults = async () => {
-    if (!selectedMatch || !selectedMatch.id) return;
-
-    const winner = determineWinner(selectedMatch);
-    const updatedMatch = { ...selectedMatch, winnerId: winner };
-
-    updatedMatch.status = winner ? "Završen" : "Čeka";
-
-    const path = `groups/${updatedMatch.groupId}/matches`;
-    await updateItem(path, selectedMatch.id, updatedMatch);
-    await updateItem(
-      `users/${selectedMatch.playerOneId}/matches`,
-      selectedMatch.id,
-      updatedMatch
-    );
-    await updateItem(
-      `users/${selectedMatch.playerTwoId}/matches`,
-      selectedMatch.id,
-      updatedMatch
-    );
-    await refresh();
-    setSnackbar({
-      open: true,
-      message: "Rezultati meča su uspješno spremljeni!",
-      severity: "success",
-    });
+  const handleModalClose = () => {
     setModalOpen(false);
     setSelectedMatch(null);
   };
 
-  const getMatchWinnerDisplay = (match: TMatch) => {
+  const getMatchWinnerDisplay = (match: JoinedMatch) => {
     const winnerId = determineWinner(match);
     if (!winnerId) return "-";
 
     const winner = getPlayer(winnerId);
-    return winner ? `${winner.firstName} ${winner.lastName}` : "-";
+    return winner ? `${winner.first_name} ${winner.last_name}` : "-";
   };
 
-  const playerOne = selectedMatch ? getPlayer(selectedMatch.playerOneId) : null;
-  const playerTwo = selectedMatch ? getPlayer(selectedMatch.playerTwoId) : null;
-  const playerOneGroup = playerOne
-    ? getPlayerGroup(selectedMatch!.playerOneId)
-    : null;
-  const playerTwoGroup = playerTwo
-    ? getPlayerGroup(selectedMatch!.playerTwoId)
-    : null;
+  // Check if selected month is the current month (only enable for current month)
+  const isCurrentMonth = selectedMonth
+    ? selectedMonth.isSame(dayjs(), "month")
+    : false;
+
+  // Delete all matches in current month
+  const handleDeleteAllMatches = async () => {
+    if (!selectedMonth) return;
+
+    const startOfMonth = selectedMonth.startOf("month");
+    const endOfMonth = selectedMonth.endOf("month");
+
+    // Get all matches in the selected month
+    const { data: matchesToDelete } = await supabase
+      .from("match")
+      .select("id")
+      .gte("created_at", startOfMonth.toISOString())
+      .lte("created_at", endOfMonth.toISOString());
+
+    if (matchesToDelete && matchesToDelete.length > 0) {
+      const matchIds = matchesToDelete.map((match) => match.id);
+      await supabase
+        .from("match")
+        .update({ is_deleted: true })
+        .in("id", matchIds);
+
+      setSnackbar({
+        open: true,
+        message: `Obrisano ${matchIds.length} mečeva iz ${selectedMonth.format(
+          "MM/YYYY"
+        )}.`,
+        severity: "success",
+      });
+    }
+
+    setDeleteAllDialogOpen(false);
+    await initialize();
+  };
+
+  // Delete single match
+  const handleDeleteSingleMatch = async () => {
+    if (!matchToDelete?.id) return;
+
+    await supabase
+      .from("match")
+      .update({ is_deleted: true })
+      .eq("id", matchToDelete.id);
+
+    await initialize();
+    setSnackbar({
+      open: true,
+      message: "Meč je obrisan.",
+      severity: "success",
+    });
+
+    setDeleteSingleDialogOpen(false);
+    setMatchToDelete(null);
+  };
+
+  // Open delete single match dialog
+  const handleDeleteMatchClick = (match: JoinedMatch) => {
+    setMatchToDelete(match);
+    setDeleteSingleDialogOpen(true);
+  };
+
+  // Derived details now handled inside EditMatchModal
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -228,6 +261,17 @@ export default function Matches() {
           Raspored
         </Typography>
       </div>
+      <Box sx={{ mb: 2 }}>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            value={selectedMonth}
+            onChange={(newValue) => setSelectedMonth(newValue)}
+            label="Odaberi mjesec"
+            views={["month", "year"]}
+            format="MM/YYYY"
+          />
+        </LocalizationProvider>
+      </Box>
       <Button
         sx={{
           mb: 2,
@@ -237,6 +281,30 @@ export default function Matches() {
       >
         {showOnlyMine ? "Prikaži sve mečeve" : "Prikaži samo moje mečeve"}
       </Button>
+      {isAdmin && (
+        <>
+          <Button
+            sx={{ mb: 2, ml: 2 }}
+            variant="outlined"
+            startIcon={<SaveIcon />}
+            disabled={!isCurrentMonth}
+            onClick={async () => {
+              const matches = await generateSchedule();
+              if (matches.length) {
+                await supabase.from("match").insert(matches);
+                await initialize();
+                setSnackbar({
+                  open: true,
+                  message: "Raspored generiran.",
+                  severity: "success",
+                });
+              }
+            }}
+          >
+            Generiraj raspored
+          </Button>
+        </>
+      )}
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
@@ -266,11 +334,12 @@ export default function Matches() {
           </TableHead>
           <TableBody>
             {matches.map((match, index) => {
-              const p1 = getPlayer(match.playerOneId);
-              const p2 = getPlayer(match.playerTwoId);
-              const p1Group = getPlayerGroup(match.playerOneId);
-              const p2Group = getPlayerGroup(match.playerTwoId);
-              const isCompleted = match.status === "Završen";
+              const p1 = match.player_one;
+              const p2 = match.player_two;
+              const p1Group = match.group;
+              const p2Group = match.group;
+              const isCompleted =
+                match.status === "played" || match.status === "surrendered";
 
               return (
                 <TableRow
@@ -310,7 +379,7 @@ export default function Matches() {
                         }}
                       >
                         <Typography variant="body2" fontWeight="medium">
-                          {p1?.firstName} {p1?.lastName}
+                          {p1?.first_name} {p1?.last_name}
                         </Typography>
                         <Chip
                           label={p1Group?.name}
@@ -345,7 +414,7 @@ export default function Matches() {
                         }}
                       >
                         <Typography variant="body2" fontWeight="medium">
-                          {p2?.firstName} {p2?.lastName}
+                          {p2?.first_name} {p2?.last_name}
                         </Typography>
                         <Chip
                           label={p2Group?.name}
@@ -370,21 +439,36 @@ export default function Matches() {
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    {isCompleted ? (
+                    {match.status === "surrendered" ? (
+                      <Chip label="Predaja" size="small" color="warning" />
+                    ) : isCompleted ? (
                       <Chip label="Završen" size="small" color="success" />
                     ) : (
                       <Chip label="Čeka" size="small" color="default" />
                     )}
                   </TableCell>
                   <TableCell align="center">
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<EditIcon />}
-                      onClick={() => handleMatchSelect(match)}
-                    >
-                      Uredi
-                    </Button>
+                    <Box display="flex" gap={1} justifyContent="center">
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<EditIcon />}
+                        onClick={() => handleMatchSelect(match)}
+                      >
+                        Uredi
+                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          color="error"
+                          startIcon={<DeleteIcon />}
+                          onClick={() => handleDeleteMatchClick(match)}
+                        >
+                          Obriši
+                        </Button>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               );
@@ -392,340 +476,32 @@ export default function Matches() {
           </TableBody>
         </Table>
       </TableContainer>
-      <Dialog
+
+      <EditMatchModal
         open={modalOpen}
+        match={selectedMatch}
         onClose={handleModalClose}
-        maxWidth="md"
-        fullWidth
-        fullScreen={isMobile}
-        sx={{
-          "& .MuiDialog-paper": {
-            margin: { xs: 0, sm: 2 },
-            maxHeight: { xs: "100vh", sm: "90vh" },
-            borderRadius: { xs: 0, sm: 2 },
-          },
+        onSave={async (updated, winnerId, status, isSurrender) => {
+          if (!updated?.id) return;
+          await supabase
+            .from("match")
+            .update({
+              sets: updated.sets,
+              winner_id: winnerId,
+              status,
+              is_surrender: isSurrender,
+            })
+            .eq("id", updated.id);
+          await initialize();
+          setSnackbar({
+            open: true,
+            message: "Rezultati meča su spremljeni.",
+            severity: "success",
+          });
+          setModalOpen(false);
+          setSelectedMatch(null);
         }}
-      >
-        <DialogTitle>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Typography
-              variant="h6"
-              sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
-            >
-              Unesite rezultate meča
-            </Typography>
-            <IconButton onClick={handleModalClose} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
-          {selectedMatch && (
-            <>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={3}
-                gap={2}
-              >
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={2}
-                  width={{ xs: "100%", sm: "auto" }}
-                >
-                  <Avatar
-                    sx={{
-                      width: { xs: 40, sm: 48 },
-                      height: { xs: 40, sm: 48 },
-                    }}
-                  >
-                    {playerOne?.avatar}
-                  </Avatar>
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
-                    >
-                      {playerOne?.firstName} {playerOne?.lastName}
-                    </Typography>
-                    <Chip
-                      label={playerOneGroup?.name}
-                      size="small"
-                      sx={{
-                        background: playerOneGroup?.color,
-                        color: "white",
-                      }}
-                    />
-                  </Box>
-                </Box>
-
-                <Typography
-                  variant="h5"
-                  color="text.secondary"
-                  sx={{
-                    fontSize: { xs: "1.1rem", sm: "1.5rem" },
-                  }}
-                >
-                  PROTIV
-                </Typography>
-
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="flex-end"
-                  gap={2}
-                  width={{ xs: "100%", sm: "auto" }}
-                >
-                  <Box textAlign={{ xs: "left", sm: "right" }}>
-                    <Typography
-                      variant="h6"
-                      sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
-                    >
-                      {playerTwo?.firstName} {playerTwo?.lastName}
-                    </Typography>
-                    <Chip
-                      label={playerTwoGroup?.name}
-                      size="small"
-                      sx={{
-                        background: playerTwoGroup?.color,
-                        color: "white",
-                      }}
-                    />
-                  </Box>
-                  <Avatar
-                    sx={{
-                      width: { xs: 40, sm: 48 },
-                      height: { xs: 40, sm: 48 },
-                    }}
-                  >
-                    {playerTwo?.avatar}
-                  </Avatar>
-                </Box>
-              </Box>
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
-              >
-                Rezultati setova
-              </Typography>
-
-              {selectedMatch.sets.map((set, index) => {
-                const isTieBreak = index + 1 === 3;
-                return (
-                  <Box
-                    key={index}
-                    mb={3}
-                    sx={{
-                      width: "100%",
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      gutterBottom
-                      sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}
-                    >
-                      {isTieBreak ? "Tie break" : index + 1 + ". set"}
-                    </Typography>
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Grid width="40%">
-                        {isTieBreak ? (
-                          <TextField
-                            fullWidth
-                            type="number"
-                            label={`${playerOne?.firstName} - bodovi`}
-                            value={set.playerOneGames || null}
-                            onChange={(e) =>
-                              handleSetScoreChange(
-                                index,
-                                "one",
-                                Number.parseInt(e.target.value) || 0
-                              )
-                            }
-                            inputProps={{ min: 0, max: 20 }}
-                            sx={{
-                              "& .MuiInputBase-input": {
-                                fontSize: { xs: "0.9rem", sm: "1rem" },
-                                padding: { xs: "12px", sm: "16.5px 14px" },
-                              },
-                              "& .MuiInputLabel-root": {
-                                fontSize: { xs: "0.85rem", sm: "1rem" },
-                              },
-                            }}
-                          />
-                        ) : (
-                          <FormControl fullWidth>
-                            <InputLabel>{`${playerOne?.firstName} - gemovi`}</InputLabel>
-                            <Select
-                              label={`${playerOne?.firstName} - gemovi`}
-                              value={set.playerOneGames || 0}
-                              onChange={(e) =>
-                                handleSetScoreChange(
-                                  index,
-                                  "one",
-                                  Number(e.target.value) || 0
-                                )
-                              }
-                            >
-                              {[...Array(8).keys()].map((gameCount) => (
-                                <MenuItem key={gameCount} value={gameCount}>
-                                  {gameCount}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        )}
-                      </Grid>
-                      <Grid textAlign="center">
-                        <Typography
-                          variant="h6"
-                          sx={{ fontSize: { xs: "1.2rem", sm: "1.5rem" } }}
-                        >
-                          -
-                        </Typography>
-                      </Grid>
-                      <Grid width="40%">
-                        {isTieBreak ? (
-                          <TextField
-                            fullWidth
-                            type="number"
-                            label={`${playerTwo?.firstName} - bodovi`}
-                            value={set.playerTwoGames || null}
-                            onChange={(e) =>
-                              handleSetScoreChange(
-                                index,
-                                "two",
-                                Number.parseInt(e.target.value) || 0
-                              )
-                            }
-                            inputProps={{ min: 0, max: 20 }}
-                            sx={{
-                              "& .MuiInputBase-input": {
-                                fontSize: { xs: "0.9rem", sm: "1rem" },
-                                padding: { xs: "12px", sm: "16.5px 14px" },
-                              },
-                              "& .MuiInputLabel-root": {
-                                fontSize: { xs: "0.85rem", sm: "1rem" },
-                              },
-                            }}
-                          />
-                        ) : (
-                          <FormControl fullWidth>
-                            <InputLabel>{`${playerTwo?.firstName} - gemovi`}</InputLabel>
-                            <Select
-                              label={`${playerTwo?.firstName} - gemovi`}
-                              value={set.playerTwoGames || 0}
-                              onChange={(e) =>
-                                handleSetScoreChange(
-                                  index,
-                                  "two",
-                                  Number(e.target.value) || 0
-                                )
-                              }
-                            >
-                              {[...Array(8).keys()].map((gameCount) => (
-                                <MenuItem key={gameCount} value={gameCount}>
-                                  {gameCount}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        )}
-                      </Grid>
-                    </Box>
-                  </Box>
-                );
-              })}
-
-              <Box mb={3}>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
-                >
-                  Pobjednik meča
-                </Typography>
-                <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
-                  {(() => {
-                    const winnerId = determineWinner(selectedMatch);
-                    const winner = getPlayer(winnerId);
-                    const winnerGroup = getPlayerGroup(winnerId);
-
-                    return winnerId && winner ? (
-                      <>
-                        <Avatar
-                          sx={{
-                            bgcolor: winnerGroup?.color + ".main",
-                            width: { xs: 32, sm: 40 },
-                            height: { xs: 32, sm: 40 },
-                          }}
-                        >
-                          {winner.avatar}
-                        </Avatar>
-                        <Typography
-                          variant="h6"
-                          sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
-                        >
-                          {winner.firstName} {winner.lastName}
-                        </Typography>
-                        <Chip
-                          label="Pobjednik"
-                          color="success"
-                          size={isMobile ? "small" : "medium"}
-                        />
-                      </>
-                    ) : (
-                      <Typography
-                        color="text.secondary"
-                        sx={{ fontSize: { xs: "0.9rem", sm: "1rem" } }}
-                      >
-                        Pobjednik će biti automatski određen na osnovu osvojenih
-                        setova
-                      </Typography>
-                    );
-                  })()}
-                </Box>
-              </Box>
-            </>
-          )}
-        </DialogContent>
-
-        <DialogActions
-          sx={{
-            p: { xs: 2, sm: 2 },
-            flexDirection: { xs: "column", sm: "row" },
-            gap: { xs: 1, sm: 0 },
-          }}
-        >
-          <Button
-            onClick={handleModalClose}
-            variant="outlined"
-            fullWidth={isMobile}
-            sx={{ order: { xs: 2, sm: 1 } }}
-          >
-            Odustani
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={saveMatchResults}
-            fullWidth={isMobile}
-            sx={{ order: { xs: 1, sm: 2 } }}
-          >
-            Spremi rezultate
-          </Button>
-        </DialogActions>
-      </Dialog>
+      />
 
       {snackbar.open && (
         <Snackbar
@@ -742,6 +518,68 @@ export default function Matches() {
           </Alert>
         </Snackbar>
       )}
+
+      {/* Delete All Matches Confirmation Dialog */}
+      <Dialog
+        open={deleteAllDialogOpen}
+        onClose={() => setDeleteAllDialogOpen(false)}
+        aria-labelledby="delete-all-dialog-title"
+      >
+        <DialogTitle id="delete-all-dialog-title">
+          Potvrdi brisanje svih mečeva
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Jeste li sigurni da želite obrisati sve mečeve iz{" "}
+            {selectedMonth?.format("MM/YYYY")}? Ova akcija se ne može poništiti.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteAllDialogOpen(false)}>
+            Odustani
+          </Button>
+          <Button
+            onClick={handleDeleteAllMatches}
+            color="error"
+            variant="contained"
+          >
+            Obriši sve
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Single Match Confirmation Dialog */}
+      <Dialog
+        open={deleteSingleDialogOpen}
+        onClose={() => setDeleteSingleDialogOpen(false)}
+        aria-labelledby="delete-single-dialog-title"
+      >
+        <DialogTitle id="delete-single-dialog-title">
+          Potvrdi brisanje meča
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Jeste li sigurni da želite obrisati ovaj meč između{" "}
+            {matchToDelete?.player_one?.first_name}{" "}
+            {matchToDelete?.player_one?.last_name} i{" "}
+            {matchToDelete?.player_two?.first_name}{" "}
+            {matchToDelete?.player_two?.last_name}? Ova akcija se ne može
+            poništiti.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteSingleDialogOpen(false)}>
+            Odustani
+          </Button>
+          <Button
+            onClick={handleDeleteSingleMatch}
+            color="error"
+            variant="contained"
+          >
+            Obriši
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

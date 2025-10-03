@@ -1,0 +1,251 @@
+{
+  "meta": {
+    "format": "JSON",
+    "version": "1.1.0",
+    "projectId": "dgte-liga",
+    "resourcePath": ["users"],
+    "recursive": false,
+    "creationTime": 1759152567,
+    "app": "firefoo"
+  },
+  "data": {
+    "0QeiGLftDWSGhb3rye4lO7Gmvsr2": {
+      "email": "markobošković@markobošković.com",
+      "firstName": "Marko",
+      "lastName": "Bošković",
+      "phone": "+385997860126",
+      "__collections__": {}
+    },
+    "0YAJLuHDB5VP66rd3D2zWDOmMUA3": {
+      "email": "igormijatov@igormijatov.com",
+      "firstName": "Igor",
+      "lastName": "Mijatov",
+      "phone": "+38598329984",
+      "__collections__": {}
+    },
+    "61ySx2tIK2aDMS5CnCCpc1exwou2": {
+      "email": "filipčevizović@filipčevizović.com",
+      "firstName": "Filip",
+      "lastName": "Čevizović",
+      "phone": "+385989784916",
+      "__collections__": {}
+    },
+    "8VZYwhTifqg6C4JDuFjcMLjNxp62": {
+      "email": "vedrancerina@vedrancerina.com",
+      "firstName": "Vedran",
+      "lastName": "Cerina",
+      "phone": "+385959156546",
+      "__collections__": {}
+    },
+    "9cMJ5qlhovaSAjA1Rdp1wUdqrBJ2": {
+      "email": "patricknikić@patricknikić.com",
+      "firstName": "Patrick",
+      "lastName": "Nikić",
+      "phone": "+385997728631",
+      "__collections__": {}
+    },
+    "Bgiv8elIYNaQV16gmNlQDWPl4vj1": {
+      "email": "davorgrgić@davorgrgić.com",
+      "firstName": "Davor",
+      "isAdmin": true,
+      "lastName": "Grgić",
+      "phone": "+385913454557",
+      "__collections__": {}
+    },
+    "KgwTrqmSqROmSkWfc7FePW3hOjm1": {
+      "email": "markojović@markojović.com",
+      "firstName": "Marko",
+      "lastName": "Jović",
+      "phone": "+385989003751",
+      "__collections__": {}
+    },
+    "NXLnCygXELOrLExtDDL9xsqqHxs2": {
+      "email": "marioštrok@marioštrok.com",
+      "firstName": "Mario",
+      "lastName": "Štrok",
+      "phone": "+385989767070",
+      "__collections__": {}
+    },
+    "NdDjMc2IrcbKWOAh8hj3ysvIduD3": {
+      "email": "mariojerković@mariojerković.com",
+      "firstName": "Mario",
+      "lastName": "Jerković",
+      "phone": "+385992374324",
+      "__collections__": {}
+    },
+    "PackjJmJO1PPIAumxoZR0xV0iKk2": {
+      "email": "ivanžupan@ivanžupan.com",
+      "firstName": "Ivan",
+      "lastName": "Župan",
+      "phone": "+385955320245",
+      "__collections__": {}
+    },
+    "RlOpTqaqVvUbmIx6biljzpmsfM23": {
+      "email": "ivanlazić@ivanlazić.com",
+      "firstName": "Ivan",
+      "lastName": "Lazić",
+      "phone": "+385992616800",
+      "__collections__": {}
+    },
+    "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2": {
+      "email": "domagojroguljić@domagojroguljić.com",
+      "firstName": "Domagoj",
+      "id": "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2",
+      "lastName": "Roguljić",
+      "phone": "+385917929744",
+      "__collections__": {}
+    },
+    "Te3EsR4ladMEnOkR65CIQ6X2Oah2": {
+      "email": "hrvojegrubeša@hrvojegrubeša.com",
+      "firstName": "Dario",
+      "id": "Te3EsR4ladMEnOkR65CIQ6X2Oah2",
+      "lastName": "Jagarinec",
+      "phone": "+38598223333",
+      "__collections__": {}
+    },
+    "WMuGrVVIJfYb8rdj4GxLIvh8kBh2": {
+      "email": "nenadcvijetić@nenadcvijetić.com",
+      "firstName": "Ivan",
+      "id": "WMuGrVVIJfYb8rdj4GxLIvh8kBh2",
+      "lastName": "Ambreuš",
+      "phone": "+385958186967",
+      "__collections__": {}
+    },
+    "XHKuOIhDiRYIu1zFUbMdNXNECPG3": {
+      "email": "robertšvab@robertšvab.com",
+      "firstName": "Robert",
+      "lastName": "Švab",
+      "phone": "+385916400219",
+      "__collections__": {}
+    },
+    "XgqxD2zw15gI8fROqj6xPQ1b2ux1": {
+      "email": "angeladiroma@angeladiroma.com",
+      "firstName": "Angela",
+      "lastName": "Di Roma",
+      "phone": "+491735133688",
+      "__collections__": {}
+    },
+    "YOrrIrvpooVWCRWX9gzs5EjLCD43": {
+      "email": "matkovicić@matkovicić.com",
+      "firstName": "Matko",
+      "lastName": "Vicić",
+      "phone": "+385913093065",
+      "__collections__": {}
+    },
+    "bNCsSiOW0teYIFRuxXC4SELij3Z2": {
+      "email": "dinkopleša@dinkopleša.com",
+      "firstName": "Dinko",
+      "lastName": "Pleša",
+      "phone": "+385915661258",
+      "__collections__": {}
+    },
+    "bSP0oL0zRPZnwLrPTWD1qR6uQzv1": {
+      "email": "željkobilić@željkobilić.com",
+      "firstName": "Željko",
+      "lastName": "Bilić",
+      "phone": "+38598315979",
+      "__collections__": {}
+    },
+    "ciuWwLPeorZ69cbXfDWvTTICM6P2": {
+      "email": "danijeljakovac@danijeljakovac.com",
+      "firstName": "Danijel",
+      "lastName": "Jakovac",
+      "phone": "+385953533072",
+      "__collections__": {}
+    },
+    "dBYcjePClXUYZHAMbCVbtoH7dSL2": {
+      "email": "tihomiršimunić@tihomiršimunić.com",
+      "firstName": "Tihomir",
+      "lastName": "Šimunić",
+      "phone": "+385916223202",
+      "__collections__": {}
+    },
+    "g3n98fHe82f26hXfXIxFg9Wuv9k1": {
+      "email": "ivanvrebac@ivanvrebac.com",
+      "firstName": "Antun",
+      "id": "g3n98fHe82f26hXfXIxFg9Wuv9k1",
+      "lastName": "Marošević",
+      "phone": "+385916191737",
+      "__collections__": {}
+    },
+    "jez4lbWbtMcFzHaaC4lZqX0dgEz1": {
+      "email": "brunojagarinec@brunojagarinec.com",
+      "firstName": "Bruno",
+      "lastName": "Jagarinec",
+      "phone": "+385915775732",
+      "__collections__": {}
+    },
+    "jzbWUnrsEqNKXJ6rEVTuSXrlDLo2": {
+      "email": "damjansimonović@damjansimonović.com",
+      "firstName": "Damjan",
+      "lastName": "Simonović",
+      "phone": "+385994876499",
+      "__collections__": {}
+    },
+    "k71IlIxZjNU9IYmoK7WgJPe8WcW2": {
+      "email": "matejtolj@matejtolj.com",
+      "firstName": "Matej",
+      "lastName": "Tolj",
+      "phone": "+385951977137",
+      "__collections__": {}
+    },
+    "laSQqPrCOGNQAkwhIigNsNdAG4D2": {
+      "email": "vickomustapić@vickomustapić.com",
+      "firstName": "Vicko",
+      "lastName": "Mustapić",
+      "phone": "+38598825180",
+      "__collections__": {}
+    },
+    "oqANEgkBfob6l0pocroQMTdbR5r1": {
+      "email": "ivantolić@ivantolić.com",
+      "firstName": "Ivan",
+      "lastName": "Tolić",
+      "phone": "+385989130323",
+      "__collections__": {}
+    },
+    "pqpZKupNWVgPsXeqm7cNm9KX69G3": {
+      "email": "ivankožul@ivankožul.com",
+      "firstName": "Ivan",
+      "lastName": "Kožul",
+      "phone": "+385989615495",
+      "__collections__": {}
+    },
+    "qjoXNj7h3XMaqshxiRDuH3KJsxG3": {
+      "email": "antunrukavina@antunrukavina.com",
+      "firstName": "Antun",
+      "lastName": "Rukavina",
+      "phone": "+385997804794",
+      "__collections__": {}
+    },
+    "uQU4tEsYEeSdt6n2xHLXZkngrex1": {
+      "email": "krešimirlončarević@krešimirlončarević.com",
+      "firstName": "Krešimir",
+      "lastName": "Lončarević",
+      "phone": "+385993234994",
+      "__collections__": {}
+    },
+    "wWP3cINFXSRptkwXPsL394GTS1q1": {
+      "email": "slavkonedić@slavkonedić.com",
+      "firstName": "Boris",
+      "id": "wWP3cINFXSRptkwXPsL394GTS1q1",
+      "lastName": "Tanasić",
+      "phone": "+385989569695",
+      "__collections__": {}
+    },
+    "wfqmXUC9htZkEyUOo3s5K8d0w9G2": {
+      "email": "domagojvidaković@domagojvidaković.com",
+      "firstName": "Domagoj",
+      "lastName": "Vidaković",
+      "phone": "+385955664412",
+      "__collections__": {}
+    },
+    "zeyEuOP4Nbhs20UORQhzVzfC1hd2": {
+      "email": "draženmedvedec@draženmedvedec.com",
+      "firstName": "Ivan",
+      "id": "zeyEuOP4Nbhs20UORQhzVzfC1hd2",
+      "lastName": "Zubac",
+      "phone": "+385915858646",
+      "__collections__": {}
+    }
+  }
+}

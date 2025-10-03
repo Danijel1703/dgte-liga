@@ -1,58 +1,85 @@
 import type { Timestamp } from "firebase/firestore";
 
-export type TUser = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  avatar: string;
-  email: string;
-  phone: string;
-  isAdmin: boolean;
-};
-
 export interface EditGroupModalProps {
   open: boolean;
   onClose: () => void;
   name: string;
-  currentMembers: Member[];
+  currentMembers: TGroupMember[];
   availableMembers: TUser[];
-  onSave: (groupName: string, members: Member[]) => Promise<void>;
+  onSave: (groupName: string, members: TGroupMember[]) => Promise<void>;
 }
 
 export interface CreateGroupModalProps {
   open: boolean;
   onClose: () => void;
   availableMembers: TUser[];
-  onSave: (groupName: string, members: Member[]) => Promise<void>;
+  onSave: (groupName: string, members: TGroupMember[]) => Promise<void>;
 }
 
+/**
+ * Defines the core structure for a User profile.
+ */
+export type TUser = {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  avatar: string;
+  email: string;
+  phone: string;
+  is_admin: boolean;
+  is_viewer: boolean;
+  is_deleted: boolean;
+};
+
+/**
+ * Defines the status for a Match.
+ */
+export type TStatus = "waiting" | "played" | "surrendered";
+
+/**
+ * Defines the structure for a Group member with group-specific data.
+ */
+export type TGroupMember = {
+  user_id: string;
+  points_in_group?: number;
+  user: TUser;
+};
+
+/**
+ * Defines the structure for a Group.
+ */
 export type TGroup = {
   id?: string;
   name: string;
-  memberIds: string[];
-  members: Array<
-    {
-      id: string;
-      pointsInGroup?: number;
-    } & TUser
-  >;
-  createdAt: Timestamp;
+  member_ids: string[];
+  members: Array<TGroupMember>;
+  created_at: Timestamp;
   color: string;
+  is_deleted: boolean;
+  match: Array<TMatch>;
 };
 
-export type TStatus = "Čeka" | "Završen" | "Predano";
+/**
+ * Defines the structure for a single Set within a Match.
+ */
+export type TSet = {
+  set_number: number;
+  player_one_games: number;
+  player_two_games: number;
+};
 
+/**
+ * Defines the structure for a Match.
+ */
 export type TMatch = {
   id?: string;
-  playerOneId: string;
-  playerTwoId: string;
-  sets: Array<{
-    setNumber: number;
-    playerOneGames: number;
-    playerTwoGames: number;
-  }>;
-  winnerId: string;
-  scheduledAt: null | Date | Timestamp;
+  player_one_id: string;
+  player_two_id: string;
+  sets: TSet[];
+  winner_id: string | null;
   status: TStatus;
-  groupId: string;
+  group_id: string;
+  is_surrender: boolean;
+  is_deleted: boolean;
+  created_at?: Timestamp;
 };

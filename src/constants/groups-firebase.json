@@ -1,0 +1,887 @@
+{
+  "meta": {
+    "format": "JSON",
+    "version": "1.1.0",
+    "projectId": "dgte-liga",
+    "resourcePath": ["groups"],
+    "recursive": false,
+    "creationTime": 1759116111,
+    "app": "firefoo"
+  },
+  "data": {
+    "ED7mtUTRQcA3XKnAlopL": {
+      "color": "#ed6c02",
+      "createdAt": { "__time__": "2025-08-23T12:30:56.671Z" },
+      "memberIds": [
+        "ciuWwLPeorZ69cbXfDWvTTICM6P2",
+        "wWP3cINFXSRptkwXPsL394GTS1q1",
+        "WMuGrVVIJfYb8rdj4GxLIvh8kBh2",
+        "wfqmXUC9htZkEyUOo3s5K8d0w9G2"
+      ],
+      "members": [
+        { "id": "ciuWwLPeorZ69cbXfDWvTTICM6P2" },
+        { "id": "wWP3cINFXSRptkwXPsL394GTS1q1" },
+        { "id": "WMuGrVVIJfYb8rdj4GxLIvh8kBh2" },
+        { "id": "wfqmXUC9htZkEyUOo3s5K8d0w9G2" }
+      ],
+      "name": "Skupina 5",
+      "__collections__": {
+        "matches": {
+          "17J9ied3DV9edrDLblkq": {
+            "groupId": "ED7mtUTRQcA3XKnAlopL",
+            "id": "17J9ied3DV9edrDLblkq",
+            "playerOneId": "ciuWwLPeorZ69cbXfDWvTTICM6P2",
+            "playerTwoId": "wWP3cINFXSRptkwXPsL394GTS1q1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 7, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "ciuWwLPeorZ69cbXfDWvTTICM6P2",
+            "__collections__": {}
+          },
+          "Vk2V9QLDZSDR93eiALWp": {
+            "groupId": "ED7mtUTRQcA3XKnAlopL",
+            "id": "Vk2V9QLDZSDR93eiALWp",
+            "playerOneId": "ciuWwLPeorZ69cbXfDWvTTICM6P2",
+            "playerTwoId": "WMuGrVVIJfYb8rdj4GxLIvh8kBh2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 1, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 1, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "WMuGrVVIJfYb8rdj4GxLIvh8kBh2",
+            "__collections__": {}
+          },
+          "Y0oKBzCXDVoQTbEKbepS": {
+            "groupId": "ED7mtUTRQcA3XKnAlopL",
+            "id": "Y0oKBzCXDVoQTbEKbepS",
+            "playerOneId": "wWP3cINFXSRptkwXPsL394GTS1q1",
+            "playerTwoId": "WMuGrVVIJfYb8rdj4GxLIvh8kBh2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 1, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "WMuGrVVIJfYb8rdj4GxLIvh8kBh2",
+            "__collections__": {}
+          },
+          "aZ19FJl5HQpjg656mGsu": {
+            "groupId": "ED7mtUTRQcA3XKnAlopL",
+            "id": "aZ19FJl5HQpjg656mGsu",
+            "playerOneId": "ciuWwLPeorZ69cbXfDWvTTICM6P2",
+            "playerTwoId": "wfqmXUC9htZkEyUOo3s5K8d0w9G2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "qGpkKggWy2F49hPKxZw8": {
+            "groupId": "ED7mtUTRQcA3XKnAlopL",
+            "playerOneId": "wWP3cINFXSRptkwXPsL394GTS1q1",
+            "playerTwoId": "wfqmXUC9htZkEyUOo3s5K8d0w9G2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "tzIvYe6LB3H0rB0e4wf8": {
+            "groupId": "ED7mtUTRQcA3XKnAlopL",
+            "id": "tzIvYe6LB3H0rB0e4wf8",
+            "playerOneId": "WMuGrVVIJfYb8rdj4GxLIvh8kBh2",
+            "playerTwoId": "wfqmXUC9htZkEyUOo3s5K8d0w9G2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "WMuGrVVIJfYb8rdj4GxLIvh8kBh2",
+            "__collections__": {}
+          }
+        }
+      }
+    },
+    "IYPBThNjr1kRKPUTG0iM": {
+      "color": "#1976d2",
+      "createdAt": { "__time__": "2025-08-23T12:30:21.276Z" },
+      "memberIds": [
+        "uQU4tEsYEeSdt6n2xHLXZkngrex1",
+        "qjoXNj7h3XMaqshxiRDuH3KJsxG3",
+        "pqpZKupNWVgPsXeqm7cNm9KX69G3",
+        "KgwTrqmSqROmSkWfc7FePW3hOjm1"
+      ],
+      "members": [
+        { "id": "uQU4tEsYEeSdt6n2xHLXZkngrex1" },
+        { "id": "qjoXNj7h3XMaqshxiRDuH3KJsxG3" },
+        { "id": "pqpZKupNWVgPsXeqm7cNm9KX69G3" },
+        { "id": "KgwTrqmSqROmSkWfc7FePW3hOjm1" }
+      ],
+      "name": "Skupina 2",
+      "__collections__": {
+        "matches": {
+          "32pbTmnFzE9nEGNr8MvH": {
+            "groupId": "IYPBThNjr1kRKPUTG0iM",
+            "id": "32pbTmnFzE9nEGNr8MvH",
+            "playerOneId": "uQU4tEsYEeSdt6n2xHLXZkngrex1",
+            "playerTwoId": "KgwTrqmSqROmSkWfc7FePW3hOjm1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "uQU4tEsYEeSdt6n2xHLXZkngrex1",
+            "__collections__": {}
+          },
+          "NubRoppLd29o2KLp5w68": {
+            "groupId": "IYPBThNjr1kRKPUTG0iM",
+            "id": "NubRoppLd29o2KLp5w68",
+            "playerOneId": "uQU4tEsYEeSdt6n2xHLXZkngrex1",
+            "playerTwoId": "pqpZKupNWVgPsXeqm7cNm9KX69G3",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "uQU4tEsYEeSdt6n2xHLXZkngrex1",
+            "__collections__": {}
+          },
+          "QUdiWTzVQFbK44xh59n3": {
+            "groupId": "IYPBThNjr1kRKPUTG0iM",
+            "playerOneId": "qjoXNj7h3XMaqshxiRDuH3KJsxG3",
+            "playerTwoId": "KgwTrqmSqROmSkWfc7FePW3hOjm1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "b0AkrwGZNJzidcTOTHpR": {
+            "groupId": "IYPBThNjr1kRKPUTG0iM",
+            "playerOneId": "pqpZKupNWVgPsXeqm7cNm9KX69G3",
+            "playerTwoId": "KgwTrqmSqROmSkWfc7FePW3hOjm1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "nLe8p8TeIASZN35JocY1": {
+            "groupId": "IYPBThNjr1kRKPUTG0iM",
+            "id": "nLe8p8TeIASZN35JocY1",
+            "playerOneId": "qjoXNj7h3XMaqshxiRDuH3KJsxG3",
+            "playerTwoId": "pqpZKupNWVgPsXeqm7cNm9KX69G3",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "qjoXNj7h3XMaqshxiRDuH3KJsxG3",
+            "__collections__": {}
+          },
+          "rMA5qQl7ktjWYAL2hJFs": {
+            "groupId": "IYPBThNjr1kRKPUTG0iM",
+            "playerOneId": "uQU4tEsYEeSdt6n2xHLXZkngrex1",
+            "playerTwoId": "qjoXNj7h3XMaqshxiRDuH3KJsxG3",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          }
+        }
+      }
+    },
+    "O2QbmzMrsA3hB0jkC5ll": {
+      "color": "#2e7d32",
+      "createdAt": { "__time__": "2025-08-23T12:31:14.447Z" },
+      "memberIds": [
+        "XHKuOIhDiRYIu1zFUbMdNXNECPG3",
+        "bNCsSiOW0teYIFRuxXC4SELij3Z2",
+        "XgqxD2zw15gI8fROqj6xPQ1b2ux1",
+        "YOrrIrvpooVWCRWX9gzs5EjLCD43"
+      ],
+      "members": [
+        { "id": "XHKuOIhDiRYIu1zFUbMdNXNECPG3" },
+        { "id": "bNCsSiOW0teYIFRuxXC4SELij3Z2" },
+        { "id": "XgqxD2zw15gI8fROqj6xPQ1b2ux1" },
+        { "id": "YOrrIrvpooVWCRWX9gzs5EjLCD43" }
+      ],
+      "name": "Skupina 6",
+      "__collections__": {
+        "matches": {
+          "DwLozKmqylHoItmOIBwb": {
+            "groupId": "O2QbmzMrsA3hB0jkC5ll",
+            "playerOneId": "bNCsSiOW0teYIFRuxXC4SELij3Z2",
+            "playerTwoId": "YOrrIrvpooVWCRWX9gzs5EjLCD43",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "Fmdrcands2ocn5wC5IwT": {
+            "groupId": "O2QbmzMrsA3hB0jkC5ll",
+            "playerOneId": "XgqxD2zw15gI8fROqj6xPQ1b2ux1",
+            "playerTwoId": "YOrrIrvpooVWCRWX9gzs5EjLCD43",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "JoIowW0Nd8CEeGUgyKgs": {
+            "groupId": "O2QbmzMrsA3hB0jkC5ll",
+            "playerOneId": "XHKuOIhDiRYIu1zFUbMdNXNECPG3",
+            "playerTwoId": "XgqxD2zw15gI8fROqj6xPQ1b2ux1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "e4EcDyPqjmqSgm5B6h5g": {
+            "groupId": "O2QbmzMrsA3hB0jkC5ll",
+            "playerOneId": "XHKuOIhDiRYIu1zFUbMdNXNECPG3",
+            "playerTwoId": "YOrrIrvpooVWCRWX9gzs5EjLCD43",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "ethYlSpERQQ9UoH5YirY": {
+            "groupId": "O2QbmzMrsA3hB0jkC5ll",
+            "playerOneId": "bNCsSiOW0teYIFRuxXC4SELij3Z2",
+            "playerTwoId": "XgqxD2zw15gI8fROqj6xPQ1b2ux1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "hslwf4SMKIVmqc9Z0tC5": {
+            "groupId": "O2QbmzMrsA3hB0jkC5ll",
+            "id": "hslwf4SMKIVmqc9Z0tC5",
+            "playerOneId": "XHKuOIhDiRYIu1zFUbMdNXNECPG3",
+            "playerTwoId": "bNCsSiOW0teYIFRuxXC4SELij3Z2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 4, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "XHKuOIhDiRYIu1zFUbMdNXNECPG3",
+            "__collections__": {}
+          }
+        }
+      }
+    },
+    "SfzRkComlQXLMLawFmP2": {
+      "color": "#0288d1",
+      "createdAt": { "__time__": "2025-08-23T12:31:38.680Z" },
+      "memberIds": [
+        "oqANEgkBfob6l0pocroQMTdbR5r1",
+        "laSQqPrCOGNQAkwhIigNsNdAG4D2",
+        "8VZYwhTifqg6C4JDuFjcMLjNxp62",
+        "9cMJ5qlhovaSAjA1Rdp1wUdqrBJ2"
+      ],
+      "members": [
+        { "id": "oqANEgkBfob6l0pocroQMTdbR5r1" },
+        { "id": "laSQqPrCOGNQAkwhIigNsNdAG4D2" },
+        { "id": "8VZYwhTifqg6C4JDuFjcMLjNxp62" },
+        { "id": "9cMJ5qlhovaSAjA1Rdp1wUdqrBJ2" }
+      ],
+      "name": "Skupina 7",
+      "__collections__": {
+        "matches": {
+          "0wx7mRSGaoPlHMkvxcLr": {
+            "groupId": "SfzRkComlQXLMLawFmP2",
+            "id": "0wx7mRSGaoPlHMkvxcLr",
+            "playerOneId": "oqANEgkBfob6l0pocroQMTdbR5r1",
+            "playerTwoId": "8VZYwhTifqg6C4JDuFjcMLjNxp62",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "oqANEgkBfob6l0pocroQMTdbR5r1",
+            "__collections__": {}
+          },
+          "5XYxMHJqINEi2AG3DOuN": {
+            "groupId": "SfzRkComlQXLMLawFmP2",
+            "playerOneId": "laSQqPrCOGNQAkwhIigNsNdAG4D2",
+            "playerTwoId": "8VZYwhTifqg6C4JDuFjcMLjNxp62",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "7SSC1F2tCLi2NgYt3oUF": {
+            "groupId": "SfzRkComlQXLMLawFmP2",
+            "id": "7SSC1F2tCLi2NgYt3oUF",
+            "playerOneId": "laSQqPrCOGNQAkwhIigNsNdAG4D2",
+            "playerTwoId": "9cMJ5qlhovaSAjA1Rdp1wUdqrBJ2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 7, "setNumber": 2 },
+              { "playerOneGames": 10, "playerTwoGames": 5, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "laSQqPrCOGNQAkwhIigNsNdAG4D2",
+            "__collections__": {}
+          },
+          "iCmg8yg1GD7eJn4mHOUL": {
+            "groupId": "SfzRkComlQXLMLawFmP2",
+            "id": "iCmg8yg1GD7eJn4mHOUL",
+            "playerOneId": "oqANEgkBfob6l0pocroQMTdbR5r1",
+            "playerTwoId": "9cMJ5qlhovaSAjA1Rdp1wUdqrBJ2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "oqANEgkBfob6l0pocroQMTdbR5r1",
+            "__collections__": {}
+          },
+          "pX5DDUlTYV2ehcYorJ9w": {
+            "groupId": "SfzRkComlQXLMLawFmP2",
+            "id": "pX5DDUlTYV2ehcYorJ9w",
+            "playerOneId": "8VZYwhTifqg6C4JDuFjcMLjNxp62",
+            "playerTwoId": "9cMJ5qlhovaSAjA1Rdp1wUdqrBJ2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 1, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "9cMJ5qlhovaSAjA1Rdp1wUdqrBJ2",
+            "__collections__": {}
+          },
+          "xaG3dET976MRxM7UiUoq": {
+            "groupId": "SfzRkComlQXLMLawFmP2",
+            "id": "xaG3dET976MRxM7UiUoq",
+            "playerOneId": "oqANEgkBfob6l0pocroQMTdbR5r1",
+            "playerTwoId": "laSQqPrCOGNQAkwhIigNsNdAG4D2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 7, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 7, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "oqANEgkBfob6l0pocroQMTdbR5r1",
+            "__collections__": {}
+          }
+        }
+      }
+    },
+    "eBaR4JUBAaMe2isz4tAs": {
+      "color": "#d32f2f",
+      "createdAt": { "__time__": "2025-08-23T12:30:43.121Z" },
+      "memberIds": [
+        "0QeiGLftDWSGhb3rye4lO7Gmvsr2",
+        "g3n98fHe82f26hXfXIxFg9Wuv9k1",
+        "bSP0oL0zRPZnwLrPTWD1qR6uQzv1",
+        "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2"
+      ],
+      "members": [
+        { "id": "0QeiGLftDWSGhb3rye4lO7Gmvsr2" },
+        { "id": "g3n98fHe82f26hXfXIxFg9Wuv9k1" },
+        { "id": "bSP0oL0zRPZnwLrPTWD1qR6uQzv1" },
+        { "id": "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2" }
+      ],
+      "name": "Skupina 4",
+      "__collections__": {
+        "matches": {
+          "G35ygMENYedyhZ1yXyCP": {
+            "groupId": "eBaR4JUBAaMe2isz4tAs",
+            "playerOneId": "g3n98fHe82f26hXfXIxFg9Wuv9k1",
+            "playerTwoId": "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "TzIXBAONR5H3l6ui6DHE": {
+            "groupId": "eBaR4JUBAaMe2isz4tAs",
+            "id": "TzIXBAONR5H3l6ui6DHE",
+            "playerOneId": "bSP0oL0zRPZnwLrPTWD1qR6uQzv1",
+            "playerTwoId": "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 2, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2",
+            "__collections__": {}
+          },
+          "ZTiqw3NogVDEq95m8aWM": {
+            "groupId": "eBaR4JUBAaMe2isz4tAs",
+            "id": "ZTiqw3NogVDEq95m8aWM",
+            "playerOneId": "0QeiGLftDWSGhb3rye4lO7Gmvsr2",
+            "playerTwoId": "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 2, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "Tdv8C8b6Q5ZJTEDxqfdRlHAUj6L2",
+            "__collections__": {}
+          },
+          "rodVV0ACwjszWWudyxTF": {
+            "groupId": "eBaR4JUBAaMe2isz4tAs",
+            "id": "rodVV0ACwjszWWudyxTF",
+            "playerOneId": "g3n98fHe82f26hXfXIxFg9Wuv9k1",
+            "playerTwoId": "bSP0oL0zRPZnwLrPTWD1qR6uQzv1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 2, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "bSP0oL0zRPZnwLrPTWD1qR6uQzv1",
+            "__collections__": {}
+          },
+          "tYTyMGLc5IXn31VKI2kT": {
+            "groupId": "eBaR4JUBAaMe2isz4tAs",
+            "id": "tYTyMGLc5IXn31VKI2kT",
+            "playerOneId": "0QeiGLftDWSGhb3rye4lO7Gmvsr2",
+            "playerTwoId": "bSP0oL0zRPZnwLrPTWD1qR6uQzv1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 2, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 1, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "bSP0oL0zRPZnwLrPTWD1qR6uQzv1",
+            "__collections__": {}
+          },
+          "yvdclVMq1j6s7yfer4Lz": {
+            "groupId": "eBaR4JUBAaMe2isz4tAs",
+            "id": "yvdclVMq1j6s7yfer4Lz",
+            "playerOneId": "0QeiGLftDWSGhb3rye4lO7Gmvsr2",
+            "playerTwoId": "g3n98fHe82f26hXfXIxFg9Wuv9k1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 7, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 7, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "0QeiGLftDWSGhb3rye4lO7Gmvsr2",
+            "__collections__": {}
+          }
+        }
+      }
+    },
+    "hkl4G8DDP69AmmekCPhF": {
+      "color": "#1976d2",
+      "createdAt": { "__time__": "2025-08-23T12:29:00.419Z" },
+      "memberIds": [
+        "0YAJLuHDB5VP66rd3D2zWDOmMUA3",
+        "dBYcjePClXUYZHAMbCVbtoH7dSL2",
+        "Te3EsR4ladMEnOkR65CIQ6X2Oah2",
+        "jzbWUnrsEqNKXJ6rEVTuSXrlDLo2"
+      ],
+      "members": [
+        { "id": "0YAJLuHDB5VP66rd3D2zWDOmMUA3" },
+        { "id": "dBYcjePClXUYZHAMbCVbtoH7dSL2" },
+        { "id": "Te3EsR4ladMEnOkR65CIQ6X2Oah2" },
+        { "id": "jzbWUnrsEqNKXJ6rEVTuSXrlDLo2" }
+      ],
+      "name": "Skupina 1",
+      "__collections__": {
+        "matches": {
+          "4D3TFw4VOleVYmmQ6gw3": {
+            "groupId": "hkl4G8DDP69AmmekCPhF",
+            "id": "4D3TFw4VOleVYmmQ6gw3",
+            "playerOneId": "dBYcjePClXUYZHAMbCVbtoH7dSL2",
+            "playerTwoId": "jzbWUnrsEqNKXJ6rEVTuSXrlDLo2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 1, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 4, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "jzbWUnrsEqNKXJ6rEVTuSXrlDLo2",
+            "__collections__": {}
+          },
+          "5NgwkgFDdsYhhBHpH8rN": {
+            "groupId": "hkl4G8DDP69AmmekCPhF",
+            "playerOneId": "0YAJLuHDB5VP66rd3D2zWDOmMUA3",
+            "playerTwoId": "dBYcjePClXUYZHAMbCVbtoH7dSL2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "IP6fQsIyBYhf02qMHTkF": {
+            "groupId": "hkl4G8DDP69AmmekCPhF",
+            "id": "IP6fQsIyBYhf02qMHTkF",
+            "playerOneId": "dBYcjePClXUYZHAMbCVbtoH7dSL2",
+            "playerTwoId": "Te3EsR4ladMEnOkR65CIQ6X2Oah2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 1 },
+              { "playerOneGames": 7, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "dBYcjePClXUYZHAMbCVbtoH7dSL2",
+            "__collections__": {}
+          },
+          "UfAyGaMdzkhTyGlBf6Pa": {
+            "groupId": "hkl4G8DDP69AmmekCPhF",
+            "playerOneId": "Te3EsR4ladMEnOkR65CIQ6X2Oah2",
+            "playerTwoId": "jzbWUnrsEqNKXJ6rEVTuSXrlDLo2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "aObGWQ1TQLoMU3VJZK9t": {
+            "groupId": "hkl4G8DDP69AmmekCPhF",
+            "id": "aObGWQ1TQLoMU3VJZK9t",
+            "playerOneId": "0YAJLuHDB5VP66rd3D2zWDOmMUA3",
+            "playerTwoId": "jzbWUnrsEqNKXJ6rEVTuSXrlDLo2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 5, "playerTwoGames": 7, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 2 },
+              { "playerOneGames": 10, "playerTwoGames": 8, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "0YAJLuHDB5VP66rd3D2zWDOmMUA3",
+            "__collections__": {}
+          },
+          "yqcKhedq8vGnjGLAJHjn": {
+            "groupId": "hkl4G8DDP69AmmekCPhF",
+            "id": "yqcKhedq8vGnjGLAJHjn",
+            "playerOneId": "0YAJLuHDB5VP66rd3D2zWDOmMUA3",
+            "playerTwoId": "Te3EsR4ladMEnOkR65CIQ6X2Oah2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "0YAJLuHDB5VP66rd3D2zWDOmMUA3",
+            "__collections__": {}
+          }
+        }
+      }
+    },
+    "igprOAZsU9mJhwa55jKz": {
+      "color": "#1565c0",
+      "createdAt": { "__time__": "2025-08-23T12:31:48.915Z" },
+      "memberIds": [
+        "NXLnCygXELOrLExtDDL9xsqqHxs2",
+        "PackjJmJO1PPIAumxoZR0xV0iKk2",
+        "jez4lbWbtMcFzHaaC4lZqX0dgEz1",
+        "zeyEuOP4Nbhs20UORQhzVzfC1hd2"
+      ],
+      "members": [
+        { "id": "NXLnCygXELOrLExtDDL9xsqqHxs2" },
+        { "id": "PackjJmJO1PPIAumxoZR0xV0iKk2" },
+        { "id": "jez4lbWbtMcFzHaaC4lZqX0dgEz1" },
+        { "id": "zeyEuOP4Nbhs20UORQhzVzfC1hd2" }
+      ],
+      "name": "Skupina 8",
+      "__collections__": {
+        "matches": {
+          "EFbF4zzmu55y15AqebwK": {
+            "groupId": "igprOAZsU9mJhwa55jKz",
+            "id": "EFbF4zzmu55y15AqebwK",
+            "playerOneId": "jez4lbWbtMcFzHaaC4lZqX0dgEz1",
+            "playerTwoId": "zeyEuOP4Nbhs20UORQhzVzfC1hd2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 2, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 2, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "jez4lbWbtMcFzHaaC4lZqX0dgEz1",
+            "__collections__": {}
+          },
+          "FVEqlOHPI5lWK0HB3qHl": {
+            "groupId": "igprOAZsU9mJhwa55jKz",
+            "id": "FVEqlOHPI5lWK0HB3qHl",
+            "playerOneId": "NXLnCygXELOrLExtDDL9xsqqHxs2",
+            "playerTwoId": "PackjJmJO1PPIAumxoZR0xV0iKk2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "NXLnCygXELOrLExtDDL9xsqqHxs2",
+            "__collections__": {}
+          },
+          "PxbzWiAiV4sI4G31OWk3": {
+            "groupId": "igprOAZsU9mJhwa55jKz",
+            "playerOneId": "PackjJmJO1PPIAumxoZR0xV0iKk2",
+            "playerTwoId": "zeyEuOP4Nbhs20UORQhzVzfC1hd2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Čeka",
+            "winnerId": "",
+            "__collections__": {}
+          },
+          "iHARBtUv6O6Foqloo3Gf": {
+            "groupId": "igprOAZsU9mJhwa55jKz",
+            "id": "iHARBtUv6O6Foqloo3Gf",
+            "playerOneId": "PackjJmJO1PPIAumxoZR0xV0iKk2",
+            "playerTwoId": "jez4lbWbtMcFzHaaC4lZqX0dgEz1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 2, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 0, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "jez4lbWbtMcFzHaaC4lZqX0dgEz1",
+            "__collections__": {}
+          },
+          "jNlDzaFONdyrgrU9JcA6": {
+            "groupId": "igprOAZsU9mJhwa55jKz",
+            "id": "jNlDzaFONdyrgrU9JcA6",
+            "playerOneId": "NXLnCygXELOrLExtDDL9xsqqHxs2",
+            "playerTwoId": "zeyEuOP4Nbhs20UORQhzVzfC1hd2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "NXLnCygXELOrLExtDDL9xsqqHxs2",
+            "__collections__": {}
+          },
+          "sQicweE7aCbL7RYp66qI": {
+            "groupId": "igprOAZsU9mJhwa55jKz",
+            "id": "sQicweE7aCbL7RYp66qI",
+            "playerOneId": "NXLnCygXELOrLExtDDL9xsqqHxs2",
+            "playerTwoId": "jez4lbWbtMcFzHaaC4lZqX0dgEz1",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 1, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 2, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "jez4lbWbtMcFzHaaC4lZqX0dgEz1",
+            "__collections__": {}
+          }
+        }
+      }
+    },
+    "zJtLeqErZUwPTIst6EcP": {
+      "color": "#9c27b0",
+      "createdAt": { "__time__": "2025-08-23T12:29:35.823Z" },
+      "memberIds": [
+        "NdDjMc2IrcbKWOAh8hj3ysvIduD3",
+        "RlOpTqaqVvUbmIx6biljzpmsfM23",
+        "k71IlIxZjNU9IYmoK7WgJPe8WcW2",
+        "61ySx2tIK2aDMS5CnCCpc1exwou2"
+      ],
+      "members": [
+        { "id": "NdDjMc2IrcbKWOAh8hj3ysvIduD3" },
+        { "id": "RlOpTqaqVvUbmIx6biljzpmsfM23" },
+        { "id": "k71IlIxZjNU9IYmoK7WgJPe8WcW2" },
+        { "id": "61ySx2tIK2aDMS5CnCCpc1exwou2" }
+      ],
+      "name": "Skupina 3",
+      "__collections__": {
+        "matches": {
+          "98qtJBwAz6UwA38zCd0Y": {
+            "groupId": "zJtLeqErZUwPTIst6EcP",
+            "id": "98qtJBwAz6UwA38zCd0Y",
+            "playerOneId": "NdDjMc2IrcbKWOAh8hj3ysvIduD3",
+            "playerTwoId": "RlOpTqaqVvUbmIx6biljzpmsfM23",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 3, "playerTwoGames": 6, "setNumber": 1 },
+              { "playerOneGames": 3, "playerTwoGames": 6, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "RlOpTqaqVvUbmIx6biljzpmsfM23",
+            "__collections__": {}
+          },
+          "QnSHwXasgncmvZDkmr62": {
+            "groupId": "zJtLeqErZUwPTIst6EcP",
+            "id": "QnSHwXasgncmvZDkmr62",
+            "playerOneId": "k71IlIxZjNU9IYmoK7WgJPe8WcW2",
+            "playerTwoId": "61ySx2tIK2aDMS5CnCCpc1exwou2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 3, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "k71IlIxZjNU9IYmoK7WgJPe8WcW2",
+            "__collections__": {}
+          },
+          "T0WqBnW8ti4MrryCad1O": {
+            "groupId": "zJtLeqErZUwPTIst6EcP",
+            "id": "T0WqBnW8ti4MrryCad1O",
+            "playerOneId": "NdDjMc2IrcbKWOAh8hj3ysvIduD3",
+            "playerTwoId": "61ySx2tIK2aDMS5CnCCpc1exwou2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "NdDjMc2IrcbKWOAh8hj3ysvIduD3",
+            "__collections__": {}
+          },
+          "g9iaufsHh2nSwmMaZnLR": {
+            "groupId": "zJtLeqErZUwPTIst6EcP",
+            "id": "g9iaufsHh2nSwmMaZnLR",
+            "playerOneId": "NdDjMc2IrcbKWOAh8hj3ysvIduD3",
+            "playerTwoId": "k71IlIxZjNU9IYmoK7WgJPe8WcW2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 2, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "NdDjMc2IrcbKWOAh8hj3ysvIduD3",
+            "__collections__": {}
+          },
+          "ibQOCadBzwAkP2j1RDa3": {
+            "groupId": "zJtLeqErZUwPTIst6EcP",
+            "id": "ibQOCadBzwAkP2j1RDa3",
+            "playerOneId": "RlOpTqaqVvUbmIx6biljzpmsfM23",
+            "playerTwoId": "61ySx2tIK2aDMS5CnCCpc1exwou2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "RlOpTqaqVvUbmIx6biljzpmsfM23",
+            "__collections__": {}
+          },
+          "kzwg6hI6CpNK4XIWhgnx": {
+            "groupId": "zJtLeqErZUwPTIst6EcP",
+            "id": "kzwg6hI6CpNK4XIWhgnx",
+            "playerOneId": "RlOpTqaqVvUbmIx6biljzpmsfM23",
+            "playerTwoId": "k71IlIxZjNU9IYmoK7WgJPe8WcW2",
+            "scheduledAt": null,
+            "sets": [
+              { "playerOneGames": 6, "playerTwoGames": 0, "setNumber": 1 },
+              { "playerOneGames": 6, "playerTwoGames": 1, "setNumber": 2 },
+              { "playerOneGames": 0, "playerTwoGames": 0, "setNumber": 3 }
+            ],
+            "status": "Završen",
+            "winnerId": "RlOpTqaqVvUbmIx6biljzpmsfM23",
+            "__collections__": {}
+          }
+        }
+      }
+    }
+  }
+}

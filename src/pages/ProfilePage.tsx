@@ -9,30 +9,59 @@ import {
   InputAdornment,
   TextField,
 } from "@mui/material";
-import { getAuth, updateEmail } from "firebase/auth";
-import { isEmpty } from "lodash-es";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useAuth } from "../providers/AuthProvider";
 import { useUsers } from "../providers/UsersProvider";
 import type { TUser } from "../types";
-import { updateItem } from "../utils/updateItem";
+import { supabase } from "../utils/supabase";
+
+export function normalizeCroatianChars(text: string): string {
+  if (!text) {
+    return "";
+  }
+
+  // Step 1: Handle Digraphs (DŽ, LJ, NJ) first.
+  let normalizedText = text;
+
+  normalizedText = normalizedText
+    .replace(/DŽ/g, "DZ")
+    .replace(/Dž/g, "Dz")
+    .replace(/dž/g, "dz")
+    .replace(/LJ/g, "LJ")
+    .replace(/Lj/g, "Lj")
+    .replace(/lj/g, "lj")
+    .replace(/NJ/g, "NJ")
+    .replace(/Nj/g, "Nj")
+    .replace(/nj/g, "nj");
+
+  // Step 2: Handle single-character diacritics (Č, Ć, Š, Ž, Đ)
+  const singleCharMap: { [key: string]: string } = {
+    Č: "C",
+    č: "c",
+    Ć: "C",
+    ć: "c",
+    Š: "S",
+    š: "s",
+    Ž: "Z",
+    ž: "z",
+    Đ: "D",
+    đ: "d",
+  };
+
+  const charRegex = /[ČčĆćŠšŽžĐđ]/g;
+  normalizedText = normalizedText.replace(charRegex, (match: string) => {
+    return singleCharMap[match];
+  });
+
+  return normalizedText;
+}
 
 export default function ProfilePage() {
   const { users, refresh } = useUsers();
-  const auth = getAuth();
-  const [profile, setProfile] = useState<TUser>(
-    users.find((u) => u.id === auth.currentUser?.uid) as TUser
-  );
-
-  const [editedProfile, setEditedProfile] = useState<TUser>({
-    firstName: "",
-    lastName: "",
-    phone: "",
-    email: "",
-    avatar: "",
-    id: "",
-    isAdmin: false,
-  });
+  const { user: authUser } = useAuth();
+  const [profile, setProfile] = useState<TUser | null>(null);
+  const [editedProfile, setEditedProfile] = useState<Partial<TUser>>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,26 +75,32 @@ export default function ProfilePage() {
     };
 
   const handleSaveProfile = async () => {
+    if (!profile || !authUser) return;
+
     setError("");
     setSuccess("");
 
     try {
       setLoading(true);
-      console.log("Updated profile:", editedProfile);
 
-      if (auth.currentUser) {
-        await updateItem("users", profile.id, editedProfile);
-        const defaultEmail =
-          profile.firstName.toLowerCase() +
-          profile.lastName.toLowerCase() +
-          "@" +
-          profile.firstName.toLowerCase() +
-          profile.lastName.toLowerCase();
-        const email = !isEmpty(editedProfile.email)
-          ? editedProfile.email
-          : defaultEmail;
-        await updateEmail(auth.currentUser, email);
-      }
+      const newPassword =
+        (editedProfile.first_name || profile.first_name).toLowerCase() +
+        (editedProfile.last_name || profile.last_name).toLowerCase() +
+        "123";
+
+      await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      await supabase
+        .from("user")
+        .update({
+          first_name: editedProfile.first_name,
+          last_name: editedProfile.last_name,
+          phone: editedProfile.phone,
+        })
+        .eq("user_id", profile.user_id);
+
       setSuccess("Profil je uspešno ažuriran!");
     } catch (error) {
       console.log(error);
@@ -77,31 +112,30 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    setEditedProfile(profile);
+    if (profile) {
+      setEditedProfile({
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        phone: profile.phone,
+      });
+    }
     setError("");
   };
 
   useEffect(() => {
-    const userProfile = users.find((u) => u.id === auth.currentUser?.uid);
+    if (authUser && users.length > 0) {
+      const userProfile = users.find((u) => u.user_id === authUser.id);
 
-    if (userProfile) {
-      const defaultEmail =
-        userProfile.firstName.toLowerCase() +
-        "." +
-        userProfile.lastName.toLowerCase() +
-        "@" +
-        userProfile.firstName.toLowerCase() +
-        "." +
-        userProfile.lastName.toLowerCase();
-
-      if (userProfile.email === defaultEmail) {
-        userProfile.email = "";
+      if (userProfile) {
+        setProfile(userProfile);
+        setEditedProfile({
+          first_name: userProfile.first_name,
+          last_name: userProfile.last_name,
+          phone: userProfile.phone,
+        });
       }
-
-      setProfile(userProfile);
-      setEditedProfile(userProfile);
     }
-  }, [users, auth.currentUser]);
+  }, [users, authUser]);
 
   if (!profile) return;
 
@@ -128,8 +162,8 @@ export default function ProfilePage() {
                   <TextField
                     fullWidth
                     label="Ime"
-                    value={editedProfile.firstName}
-                    onChange={handleInputChange("firstName")}
+                    value={editedProfile.first_name || ""}
+                    onChange={handleInputChange("first_name")}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -141,8 +175,8 @@ export default function ProfilePage() {
                   <TextField
                     fullWidth
                     label="Prezime"
-                    value={editedProfile.lastName}
-                    onChange={handleInputChange("lastName")}
+                    value={editedProfile.last_name || ""}
+                    onChange={handleInputChange("last_name")}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -155,7 +189,7 @@ export default function ProfilePage() {
                 <TextField
                   fullWidth
                   label="Broj telefona"
-                  value={editedProfile.phone}
+                  value={editedProfile.phone || ""}
                   onChange={handleInputChange("phone")}
                   InputProps={{
                     startAdornment: (

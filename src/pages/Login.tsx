@@ -10,38 +10,58 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import type React from "react";
-import { useState } from "react";
-import { app } from "../../firebase";
+import { useEffect, useState } from "react";
+import { supabase } from "../utils/supabase";
+import type { TUser } from "../types";
+import { normalizeCroatianChars } from "./Register";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<TUser[]>([]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      // We are just trying to have some way of user management, meaning that each user
-      // has it's profile but is not bothered with the whole registration flow
-      const email = username + "@" + username + ".com";
-      const password = username + "123";
-      await signInWithEmailAndPassword(getAuth(app), email, password);
-    } catch (error) {
-      console.log(error);
-      setError(
-        "Korisničko ime ili lozinka su netočni, molim vas pokušajte opet."
-      );
-    } finally {
-      setLoading(false);
+  const getUsers = async () => {
+    const { data } = await supabase.from("user").select("*");
+
+    if (data) {
+      setUsers(data);
     }
   };
 
-  // const handleClickShowPassword = () => {
-  //   setShowPassword(!showPassword);
-  // };
+  useEffect(() => {
+    getUsers();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // We are just trying to have some way of user management, meaning that each user
+    // has it's profile but is not bothered with the whole registration flow
+
+    const user = users.find(
+      (t) => t.first_name.toLowerCase() + t.last_name.toLowerCase() === username
+    );
+
+    if (!user) {
+      setError("Korisničko ime netočno, molim vas pokušajte opet.");
+      return;
+    }
+
+    const email = user.email;
+    const password = username + "123";
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizeCroatianChars(email),
+      password,
+    });
+
+    if (error) {
+      setError("Korisničko ime netočno, molim vas pokušajte opet.");
+    }
+    setLoading(false);
+  };
 
   return (
     <Container component="main" maxWidth="sm">
@@ -83,37 +103,6 @@ export default function Login() {
                   ),
                 }}
               />
-              {/* <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Lozinka"
-                type={showPassword ? "text" : "password"}
-                id="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={handleClickShowPassword}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              /> */}
-
               <Button
                 type="submit"
                 fullWidth
@@ -123,15 +112,6 @@ export default function Login() {
               >
                 {loading ? "Prijava u tijeku..." : "Prijavi se"}
               </Button>
-
-              {/* <Box sx={{ textAlign: "center", mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Nemaš korisnički račun?{" "}
-                  <Link href="/register" color="primary">
-                    Registriraj se
-                  </Link>
-                </Typography>
-              </Box> */}
             </Box>
           </CardContent>
         </Card>

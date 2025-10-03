@@ -1,4 +1,4 @@
-import { Person, Phone } from "@mui/icons-material";
+import { Person, Phone, AdminPanelSettings } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -13,63 +13,22 @@ import {
 import type React from "react";
 import { useState } from "react";
 import { supabase } from "../utils/supabase";
+import { normalizeCroatianChars } from "./ProfilePage";
+import { useUsers } from "../providers/UsersProvider";
+import { useAuth } from "../providers/AuthProvider";
 
-export function normalizeCroatianChars(text: string): string {
-  if (!text) {
-    return "";
-  }
-
-  // Step 1: Handle Digraphs (DŽ, LJ, NJ) first.
-  // The most common transliteration keeps LJ/NJ as is, and DŽ as DZ.
-  let normalizedText = text;
-
-  // Use .replace() for case-insensitive global replacement (requires the 'g' flag)
-  // Note: Older environments might need to chain multiple .replace() calls or polyfill .replaceAll()
-  normalizedText = normalizedText
-    .replace(/DŽ/g, "DZ")
-    .replace(/Dž/g, "Dz")
-    .replace(/dž/g, "dz")
-    .replace(/LJ/g, "LJ")
-    .replace(/Lj/g, "Lj")
-    .replace(/lj/g, "lj")
-    .replace(/NJ/g, "NJ")
-    .replace(/Nj/g, "Nj")
-    .replace(/nj/g, "nj");
-
-  // Step 2: Handle single-character diacritics (Č, Ć, Š, Ž, Đ)
-  const singleCharMap: { [key: string]: string } = {
-    Č: "C",
-    č: "c",
-    Ć: "C",
-    ć: "c",
-    Š: "S",
-    š: "s",
-    Ž: "Z",
-    ž: "z",
-    Đ: "D",
-    đ: "d",
-  };
-
-  // Create a regular expression to match all single diacritical characters
-  const charRegex = /[ČčĆćŠšŽžĐđ]/g;
-
-  // Use a replacement function to look up the correct substitute from the map
-  normalizedText = normalizedText.replace(charRegex, (match: string) => {
-    // We know 'match' will be a key in singleCharMap
-    return singleCharMap[match];
-  });
-
-  return normalizedText;
-}
-
-export default function Register() {
+export default function AddPlayer() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     phoneNumber: "",
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const { refresh, users } = useUsers();
+  const { user } = useAuth();
+  const currentUser = users.find((u) => u.user_id === user?.id);
 
   const handleInputChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,39 +40,74 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    e.stopPropagation();
     try {
       setLoading(true);
+      setError("");
+      setSuccess("");
+
       const fullName =
         formData.firstName.toLowerCase() +
         "." +
         formData.lastName.toLowerCase();
 
       const email = fullName + "@" + fullName + ".com";
-      const { data } = await supabase.auth.signUp({
+      const password =
+        formData.firstName.toLowerCase() +
+        formData.lastName.toLowerCase() +
+        "123";
+
+      const { data: currentSession } = await supabase.auth.getSession();
+
+      // Create user in Supabase Auth
+      const { data, error: authError } = await supabase.auth.signUp({
         email: normalizeCroatianChars(email),
-        password:
-          formData.firstName.toLowerCase() +
-          formData.lastName.toLowerCase() +
-          "123",
+        password: password,
+        options: {
+          emailRedirectTo: undefined, // Disable automatic login
+        },
       });
 
-      const id = data.user?.id;
-      if (id) {
-        await supabase.from("user").insert({
-          user_id: id,
+      supabase.auth.setSession(currentSession.session!);
+
+      if (authError) {
+        throw authError;
+      }
+
+      const userId = data.user?.id;
+      if (userId) {
+        // Insert user into user table
+        const { error: dbError } = await supabase.from("user").insert({
+          user_id: userId,
           first_name: formData.firstName,
           last_name: formData.lastName,
-          email,
+          email: normalizeCroatianChars(email),
           phone: formData.phoneNumber,
         });
+
+        if (dbError) {
+          throw dbError;
+        }
+
+        setSuccess(
+          `Igrač ${formData.firstName} ${formData.lastName} je uspješno dodan!`
+        );
+        setFormData({
+          firstName: "",
+          lastName: "",
+          phoneNumber: "",
+        });
+        await refresh();
       }
     } catch (error: any) {
-      setError(error);
+      console.error("Error adding player:", error);
+      setError(error.message || "Greška pri dodavanju igrača");
     } finally {
       setLoading(false);
     }
   };
+
+  if (!currentUser?.is_admin) return null;
 
   return (
     <Container component="main" maxWidth="sm">
@@ -121,17 +115,33 @@ export default function Register() {
         <Card className="w-full">
           <CardContent className="p-8!">
             <Box className="text-center mb-5">
-              <Typography variant="h4" component="h1" gutterBottom>
-                DGTE - LIGA
-              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mb: 2,
+                }}
+              >
+                <AdminPanelSettings sx={{ color: "primary.main", mr: 1 }} />
+                <Typography variant="h4" component="h1" gutterBottom>
+                  DGTE - LIGA
+                </Typography>
+              </Box>
               <Typography variant="body2" color="text.secondary">
-                Registriranje igrača
+                Dodavanje novog igrača
               </Typography>
             </Box>
 
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
+              </Alert>
+            )}
+
+            {success && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {success}
               </Alert>
             )}
 
@@ -205,7 +215,7 @@ export default function Register() {
                 sx={{ mt: 3, mb: 2 }}
                 disabled={loading}
               >
-                {loading ? "Registracija u tijeku..." : "Registriraj igrača"}
+                {loading ? "Dodavanje u tijeku..." : "Dodaj igrača"}
               </Button>
             </Box>
           </CardContent>

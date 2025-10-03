@@ -1,6 +1,12 @@
-import { createContext, useContext, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import type { TUser } from "../types";
-import useCollection from "../hooks/useCollection";
+import { supabase } from "../utils/supabase";
 
 interface TUsersContext {
   users: TUser[];
@@ -13,13 +19,25 @@ const useUsers = () =>
   useContext(UsersContext) || { users: [], refresh: () => {} };
 
 const UsersProvider = ({ children }: { children: ReactNode }) => {
-  const { data, refresh } = useCollection<TUser>("users");
+  const [data, setData] = useState<TUser[]>([]);
+
+  const getUsers = async () => {
+    const response = await supabase
+      .from("user")
+      .select("*")
+      .eq("is_deleted", false).order("last_name");
+    if (response.data) setData(response.data);
+  };
+
+  useEffect(() => {
+    getUsers();
+  }, []);
 
   return (
     <UsersContext.Provider
       value={{
         users: data,
-        refresh: refresh,
+        refresh: getUsers,
       }}
     >
       {children}
@@ -27,4 +45,4 @@ const UsersProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export { useUsers, UsersProvider };
+export { UsersProvider, useUsers };

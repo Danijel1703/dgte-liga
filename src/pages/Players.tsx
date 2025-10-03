@@ -1,10 +1,11 @@
 "use client";
 
-import { Person, Phone, Search } from "@mui/icons-material";
+import { Delete, Person, Phone, Search } from "@mui/icons-material";
 import {
   Avatar,
   Box,
   Container,
+  IconButton,
   InputAdornment,
   Paper,
   Table,
@@ -15,23 +16,60 @@ import {
   TableRow,
   TextField,
   Typography,
+  Alert,
 } from "@mui/material";
 import { sortBy } from "lodash-es";
 import { useState } from "react";
 import { useUsers } from "../providers/UsersProvider";
+import { useAuth } from "../providers/AuthProvider";
+import { supabase } from "../utils/supabase";
 
 export default function Players() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { users: players } = useUsers();
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { users: players, refresh } = useUsers();
+  const { user: authUser } = useAuth();
+  const me = players.find((p) => p.user_id === authUser?.id);
 
   const filteredPlayers = players.filter(
     (player) =>
-      `${player.firstName} ${player.lastName}`
+      `${player.first_name} ${player.last_name}`
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       player.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       player.phone.includes(searchTerm)
   );
+
+  const handleDeletePlayer = async (playerId: string, playerName: string) => {
+    if (!confirm(`Jeste li sigurni da želite obrisati igrača ${playerName}?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+
+      const { error } = await supabase
+        .from("user")
+        .update({ is_deleted: true })
+        .eq("user_id", playerId);
+
+      if (error) {
+        throw error;
+      }
+
+      setSuccess(`Igrač ${playerName} je uspješno obrisan!`);
+      refresh(); // Refresh the users list
+    } catch (error: any) {
+      console.error("Error deleting player:", error);
+      setError(error.message || "Greška pri brisanju igrača");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Container maxWidth="lg">
@@ -49,6 +87,18 @@ export default function Players() {
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           Lista registriranih igrača
         </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {success}
+          </Alert>
+        )}
 
         <TextField
           fullWidth
@@ -83,28 +133,18 @@ export default function Players() {
               <TableCell sx={{ color: "white", fontWeight: 600 }}>
                 Telefon
               </TableCell>
-              {/* <TableCell sx={{ color: "white", fontWeight: 600 }}>
-                Email
-              </TableCell> */}
-              {/* <TableCell sx={{ color: "white", fontWeight: 600 }}>
+              <TableCell sx={{ color: "white", fontWeight: 600 }}>
                 Akcije
-              </TableCell> */}
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {sortBy(filteredPlayers, "lastName")
-              .filter((t) => !t.isAdmin)
+              .filter((t) => !t.is_viewer)
               .map((player) => {
-                // const defaultEmail =
-                //   player.firstName.toLowerCase() +
-                //   player.lastName.toLowerCase() +
-                //   "@" +
-                //   player.firstName.toLowerCase() +
-                //   player.lastName.toLowerCase();
-                // const isDefaultEmail = defaultEmail === player.email;
                 return (
                   <TableRow
-                    key={player.id}
+                    key={player.user_id}
                     sx={{
                       "&:hover": { backgroundColor: "action.hover" },
                       "&:nth-of-type(odd)": {
@@ -124,16 +164,16 @@ export default function Players() {
                           }}
                           className="text-sm!"
                         >
-                          {player.firstName[0]}
-                          {player.lastName[0]}
+                          {player.first_name[0]}
+                          {player.last_name[0]}
                         </Avatar>
                       </Box>
                     </TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>
-                      {player.firstName}
+                      {player.first_name}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>
-                      {player.lastName}
+                      {player.last_name}
                     </TableCell>
                     <TableCell>
                       <Box>
@@ -152,28 +192,25 @@ export default function Players() {
                         </a>
                       </Box>
                     </TableCell>
-                    {/* <TableCell>
-                    {!isDefaultEmail ? (
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Email fontSize="small" color="action" />
-                        {player.email}
+                    <TableCell>
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        {me?.is_admin && player.user_id !== authUser?.id && (
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() =>
+                              handleDeletePlayer(
+                                player.user_id,
+                                `${player.first_name} ${player.last_name}`
+                              )
+                            }
+                            disabled={loading}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        )}
                       </Box>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell> */}
-                    {/* <TableCell>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <IconButton size="small" color="primary">
-                      <Edit fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" color="error">
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </TableCell> */}
+                    </TableCell>
                   </TableRow>
                 );
               })}

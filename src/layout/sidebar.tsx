@@ -6,7 +6,10 @@ import {
   Logout,
   Menu,
   Person,
+  PersonAdd,
   Schedule,
+  Rule,
+  Payment,
 } from "@mui/icons-material";
 import {
   AppBar,
@@ -24,19 +27,24 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { getAuth, signOut } from "firebase/auth";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { app } from "../../firebase";
+import { supabase } from "../utils/supabase";
+import { useUsers } from "../providers/UsersProvider";
+import { useAuth } from "../providers/AuthProvider";
 
 const drawerWidth = 240;
 
 const menuItems = [
   { text: "Početna", icon: <Home />, path: "/" },
   { text: "Igrači", icon: <Person />, path: "/players" },
+  // "Dodaj igrača" will be shown only for admins below
+  { text: "Dodaj igrača", icon: <PersonAdd />, path: "/add-player", adminOnly: true as const },
   { text: "Grupe", icon: <Group />, path: "/groups" },
   { text: "Raspored", icon: <Schedule />, path: "/matches" },
   { text: "Rang lista", icon: <Leaderboard />, path: "/rankings" },
+  { text: "Pravila", icon: <Rule />, path: "/rules" },
+  { text: "Uplate", icon: <Payment />, path: "/payment" },
   { text: "Profil", icon: <AccountCircle />, path: "/profile" },
 ];
 
@@ -44,6 +52,9 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { users } = useUsers();
+  const { user } = useAuth();
+  const currentUser = users.find((u) => u.user_id === user?.id);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -73,7 +84,9 @@ export function Sidebar() {
       </Toolbar>
       <Box sx={{ overflow: "auto" }}>
         <List>
-          {menuItems.map((item) => (
+          {menuItems
+            .filter((item) => !item.adminOnly || currentUser?.is_admin)
+            .map((item) => (
             <ListItem key={item.path} disablePadding>
               <ListItemButton
                 selected={pathname === item.path}
@@ -100,7 +113,7 @@ export function Sidebar() {
         sx={{
           marginTop: "auto",
         }}
-        onClick={() => signOut(getAuth(app))}
+        onClick={() => supabase.auth.signOut()}
         startIcon={<Logout />}
       >
         Odjava

@@ -1,13 +1,11 @@
-import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useState, type ReactNode } from "react";
-import { app } from "../../firebase";
+import { supabase } from "../utils/supabase";
 
 export const WithAuth = ({ children }: { children: ReactNode }) => {
-  const auth = getAuth(app);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  onAuthStateChanged(auth, (user) => {
-    setIsAuthenticated(!!user?.uid);
+  supabase.auth.onAuthStateChange((e, session) => {
+    setIsAuthenticated(e === "SIGNED_IN" || !!session);
   });
 
   return isAuthenticated ? children : null;

@@ -1,9 +1,4 @@
-import {
-  Schedule as Clock,
-  EuroSymbol as Euro,
-  LocationOn as MapPin,
-  EmojiEvents as Trophy,
-} from "@mui/icons-material";
+import { EmojiEvents as Trophy } from "@mui/icons-material";
 import {
   Box,
   Card,
@@ -13,7 +8,7 @@ import {
   ListItem,
   ListItemText,
   Paper,
-  Typography
+  Typography,
 } from "@mui/material";
 
 export default function Home() {
@@ -77,132 +72,6 @@ export default function Home() {
               </List>
             </CardContent>
           </Card>
-        </Container>
-      </Box>
-
-      {/* Pricing Section */}
-      <Box sx={{ py: 8, px: 2 }}>
-        <Container maxWidth="sm">
-          <Box sx={{ textAlign: "center", mb: 6 }}>
-            <Typography
-              variant="h3"
-              component="h2"
-              sx={{ fontWeight: "bold", mb: 2 }}
-            >
-              Cijena Lige
-            </Typography>
-          </Box>
-
-          <Card sx={{ maxWidth: "400px", mx: "auto", boxShadow: 4 }}>
-            <CardContent sx={{ textAlign: "center", p: 4 }}>
-              <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
-                Mjesečna članarina
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Cijena za ligu kroz cijelu godinu
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mb: 2,
-                }}
-              >
-                <Euro sx={{ fontSize: 40, color: "primary.main", mr: 1 }} />
-                <Typography
-                  variant="h2"
-                  component="span"
-                  sx={{ fontWeight: "bold", color: "primary.main" }}
-                >
-                  35
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Container>
-      </Box>
-
-      {/* Rules Section */}
-      <Box sx={{ py: 8, px: 2, bgcolor: "grey.50" }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: "center", mb: 6 }}>
-            <Typography
-              variant="h3"
-              component="h2"
-              sx={{ fontWeight: "bold", mb: 2 }}
-            >
-              Pravila igre
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
-              Različita pravila za vanjsko i unutarnje igranje
-            </Typography>
-          </Box>
-          <div className="flex w-full justify-center items-center flex-wrap gap-10">
-            <Card sx={{ height: "100%", boxShadow: 2 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <MapPin sx={{ color: "primary.main", mr: 1 }} />
-                  <Typography
-                    variant="h5"
-                    component="h3"
-                    sx={{ fontWeight: "bold" }}
-                  >
-                    Vanjski tereni
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Clock
-                    sx={{ color: "text.secondary", mr: 1, fontSize: 20 }}
-                  />
-                  <Typography variant="body2">
-                    Rezervacija termina je 2 sata
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: "bold", mb: 1 }}
-                >
-                  Format igre:
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Igra se 2 seta do 6 (tie brake do 7)
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ height: "100%", boxShadow: 2 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <MapPin sx={{ color: "secondary.main", mr: 1 }} />
-                  <Typography
-                    variant="h5"
-                    component="h3"
-                    sx={{ fontWeight: "bold" }}
-                  >
-                    Balon (unutarnji)
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Clock
-                    sx={{ color: "text.secondary", mr: 1, fontSize: 20 }}
-                  />
-                  <Typography variant="body2">
-                    Rezervacija traje 1,5 sat
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: "bold", mb: 1 }}
-                >
-                  Format igre:
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Igra se 2 seta (kreće se od 2:2), tie brake do 7
-                </Typography>
-              </CardContent>
-            </Card>
-          </div>
         </Container>
       </Box>
 

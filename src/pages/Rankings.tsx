@@ -10,12 +10,12 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { reverse, sortBy, sum } from "lodash-es";
+import { orderBy, reverse, sortBy, sum } from "lodash-es";
 import { useEffect, useState } from "react";
-import { getData } from "../hooks/useCollection";
-import { useUsers } from "../providers/UsersProvider";
-import type { TMatch } from "../types";
 import { useLoader } from "../providers/Loader";
+import { useUsers } from "../providers/UsersProvider";
+import type { TMatch, TSet } from "../types";
+import { supabase } from "../utils/supabase";
 
 type TRankItem = {
   numberOfWins: number;
@@ -34,44 +34,50 @@ export const Rankings = () => {
   const initialize = async () => {
     setLoading(true);
     const items: TRankItem[] = [];
+
+    // Fetch all matches once from Supabase
+    const { data: matchesData } = await supabase.from("match").select("*");
+    const allMatches = (matchesData || []) as TMatch[];
+
     for (const user of users) {
-      if (user.isAdmin) continue;
-      const matches = await getData<TMatch>(`users/${user.id}/matches`);
+      const userMatches = allMatches.filter(
+        (m) =>
+          m.player_one_id === user.user_id || m.player_two_id === user.user_id
+      );
+
       let gamesWon = 0;
       let gamesLost = 0;
 
-      matches.forEach((match) => {
-        if (match.playerOneId === user.id) {
-          gamesWon += sum(
-            match.sets.filter((_t, i) => i !== 2).map((t) => t.playerOneGames)
-          );
-          gamesLost += sum(
-            match.sets.filter((_t, i) => i !== 2).map((t) => t.playerTwoGames)
-          );
+      userMatches.forEach((match) => {
+        const isPlayerOne = match.player_one_id === user.user_id;
+        const nonTieBreakSets = match.sets.filter(
+          (s: TSet) => s.set_number !== 3
+        );
+        if (isPlayerOne) {
+          gamesWon += sum(nonTieBreakSets.map((t) => t.player_one_games));
+          gamesLost += sum(nonTieBreakSets.map((t) => t.player_two_games));
         } else {
-          gamesWon += sum(
-            match.sets.filter((_t, i) => i !== 2).map((t) => t.playerTwoGames)
-          );
-          gamesLost += sum(
-            match.sets.filter((_t, i) => i !== 2).map((t) => t.playerOneGames)
-          );
+          gamesWon += sum(nonTieBreakSets.map((t) => t.player_two_games));
+          gamesLost += sum(nonTieBreakSets.map((t) => t.player_one_games));
         }
       });
 
-      const now = matches.filter((m) => m.winnerId === user.id).length;
-      const item = {
-        numberOfWins: now,
-        gamesWon: gamesWon,
-        gamesLost: gamesLost,
-        totalPoints: now * 3,
-        firstName: user.firstName,
-        lastName: user.lastName,
+      const numberOfWins = userMatches.filter(
+        (m) => m.winner_id === user.user_id
+      ).length;
+      const item: TRankItem = {
+        numberOfWins,
+        gamesWon,
+        gamesLost,
+        totalPoints: numberOfWins * 3,
+        firstName: user.first_name,
+        lastName: user.last_name,
         avatar: user.avatar,
       };
       items.push(item);
     }
 
-    setRankings(items);
+    setRankings(orderBy(items, "totalPoints", "desc"));
     setLoading(false);
   };
 
