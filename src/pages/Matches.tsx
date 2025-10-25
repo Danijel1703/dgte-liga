@@ -76,14 +76,17 @@ export default function Matches() {
   const initialize = async () => {
     setLoading(true);
     // Load matches with joined users and group
-    const { data: matchesData } = await supabase.from("match").select(
-      `
+    const { data: matchesData } = await supabase
+      .from("match")
+      .select(
+        `
         *,
         player_one:player_one_id (*),
         player_two:player_two_id (*),
         group:group_id (*)
       `
-    );
+      )
+      .eq("is_deleted", false);
 
     if (matchesData) {
       const items = orderBy(matchesData, "group.name") as JoinedMatch[];

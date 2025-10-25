@@ -141,7 +141,12 @@ export default function Payment() {
                   <Typography
                     variant="h4"
                     component="div"
-                    sx={{ fontWeight: "bold", fontFamily: "monospace" }}
+                    fontSize=""
+                    sx={{
+                      fontWeight: "bold",
+                      fontFamily: "monospace",
+                      fontSize: { xs: "1rem", sm: "2rem", md: "2.5rem" },
+                    }}
                   >
                     HR3923400091111199032
                   </Typography>
