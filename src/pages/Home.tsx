@@ -1,7 +1,24 @@
 import { EmojiEvents as Trophy } from "@mui/icons-material";
-import { Box, Container, Paper, Typography } from "@mui/material";
+import { Box, Button, Container, Paper, Typography } from "@mui/material";
+import { useAuth } from "../providers/AuthProvider";
+import { useMemo, useState } from "react";
+import { useUsers } from "../providers/UsersProvider";
+import { useAnnouncements } from "../hooks/useAnnouncements";
+import AddAnnouncementModal from "../components/AddAnnouncementModal";
+import AnnouncementList from "../components/AnnouncementList";
 
 export default function Home() {
+  const { user } = useAuth();
+  const { users } = useUsers();
+  const [addAnnouncementOpen, setAddAnnouncementOpen] = useState(false);
+  const { announcements, loading, error, deleteAnnouncement, refresh } =
+    useAnnouncements();
+
+  const isAdmin = useMemo(
+    () => users.find((u) => u.user_id === user?.id)?.is_admin,
+    [user, users]
+  );
+
   return (
     <Box
       sx={{ minHeight: "100vh", bgcolor: "background.default", width: "100%" }}
@@ -24,10 +41,30 @@ export default function Home() {
           </Typography>
         </Container>
       </Box>
+      <Container maxWidth="md">
+        <Box sx={{ mb: 3 }}>
+          {isAdmin && (
+            <Button
+              variant="contained"
+              onClick={() => setAddAnnouncementOpen(true)}
+              sx={{ mb: 2 }}
+            >
+              Dodaj Obavjest
+            </Button>
+          )}
+        </Box>
 
+        <AnnouncementList
+          announcements={announcements}
+          loading={loading}
+          error={error}
+          deleteAnnouncement={deleteAnnouncement}
+          isAdmin={isAdmin}
+        />
+      </Container>
       {/* Footer */}
       <Paper sx={{ mt: 4 }} elevation={0}>
-        <Container maxWidth="md">
+        <Container>
           <Box sx={{ textAlign: "center" }}>
             <Box
               sx={{
@@ -52,6 +89,12 @@ export default function Home() {
           </Box>
         </Container>
       </Paper>
+
+      <AddAnnouncementModal
+        open={addAnnouncementOpen}
+        onClose={() => setAddAnnouncementOpen(false)}
+        onSuccess={refresh}
+      />
     </Box>
   );
 }

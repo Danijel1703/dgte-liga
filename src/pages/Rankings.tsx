@@ -10,7 +10,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { orderBy, reverse, sortBy, sum } from "lodash-es";
+import { reverse, sortBy, sum } from "lodash-es";
 import { useEffect, useState } from "react";
 import { useLoader } from "../providers/Loader";
 import { useUsers } from "../providers/UsersProvider";
@@ -25,6 +25,8 @@ type TRankItem = {
   avatar: string;
   gamesWon: number;
   gamesLost: number;
+  matchesPlayed: number;
+  isDeleted: boolean;
 };
 export const Rankings = () => {
   const { users, refresh } = useUsers();
@@ -36,7 +38,9 @@ export const Rankings = () => {
     const items: TRankItem[] = [];
 
     // Fetch all matches once from Supabase
-    const { data: matchesData } = await supabase.from("match").select("*");
+    const { data: matchesData } = await supabase
+      .from("match")
+      .select("*, group (*, group_member (*))");
     const allMatches = (matchesData || []) as TMatch[];
 
     for (const user of users) {
@@ -73,11 +77,17 @@ export const Rankings = () => {
         firstName: user.first_name,
         lastName: user.last_name,
         avatar: user.avatar,
+        matchesPlayed: userMatches.filter((m) => !!m.winner_id).length,
+        isDeleted: userMatches.some((m) =>
+          m.group.group_member.some(
+            (gm) => gm.is_deleted && gm.user_id === user.user_id
+          )
+        ),
       };
       items.push(item);
     }
 
-    setRankings(orderBy(items, "totalPoints", "desc"));
+    setRankings(items.filter((i) => i.matchesPlayed > 0 && !i.isDeleted));
     setLoading(false);
   };
 

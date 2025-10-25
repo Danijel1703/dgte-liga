@@ -82,4 +82,16 @@ export type TMatch = {
   is_surrender: boolean;
   is_deleted: boolean;
   created_at?: Timestamp;
+  group: {
+    group_member: Array<{ is_deleted: boolean; user_id: string }>;
+  };
+};
+
+/**
+ * Defines the structure for an Announcement.
+ */
+export type TAnnouncement = {
+  id?: string;
+  text: string;
+  created_at?: string;
 };
