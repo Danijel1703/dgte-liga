@@ -55,6 +55,10 @@ export default function AddAnnouncementModal({
     onClose();
   };
 
+  const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setText(event.target.value);
+  };
+
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>Dodaj Obavjest</DialogTitle>
@@ -71,7 +75,7 @@ export default function AddAnnouncementModal({
             rows={4}
             label="Tekst obavjesti"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
             placeholder="Unesite tekst obavjesti..."
             variant="outlined"
             disabled={loading}

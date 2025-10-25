@@ -117,6 +117,33 @@ export function EditMatchModal({
     await onSave(localMatch, winnerId, status, isSurrender);
   };
 
+  // Event handlers for form inputs
+  const handlePlayerOneScoreChange = (setIndex: number, value: number) => {
+    handleSetScoreChange(setIndex, "one", value);
+  };
+
+  const handlePlayerTwoScoreChange = (setIndex: number, value: number) => {
+    handleSetScoreChange(setIndex, "two", value);
+  };
+
+  const handlePlayerOneGamesChange = (setIndex: number, value: number) => {
+    handleSetScoreChange(setIndex, "one", value);
+  };
+
+  const handlePlayerTwoGamesChange = (setIndex: number, value: number) => {
+    handleSetScoreChange(setIndex, "two", value);
+  };
+
+  const handleSurrenderChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setIsSurrender(event.target.value === "yes");
+  };
+
+  const handleManualWinnerChange = (event: any) => {
+    setManualWinner((event.target.value as string) || null);
+  };
+
   return (
     <Dialog
       open={open}
@@ -248,9 +275,8 @@ export function EditMatchModal({
                           label={`${playerOne?.first_name} - bodovi`}
                           value={set.player_one_games || null}
                           onChange={(e) =>
-                            handleSetScoreChange(
+                            handlePlayerOneScoreChange(
                               index,
-                              "one",
                               Number.parseInt(e.target.value) || 0
                             )
                           }
@@ -263,9 +289,8 @@ export function EditMatchModal({
                             label={`${playerOne?.first_name} - gemovi`}
                             value={set.player_one_games || 0}
                             onChange={(e) =>
-                              handleSetScoreChange(
+                              handlePlayerOneGamesChange(
                                 index,
-                                "one",
                                 Number(e.target.value) || 0
                               )
                             }
@@ -290,9 +315,8 @@ export function EditMatchModal({
                           label={`${playerTwo?.first_name} - bodovi`}
                           value={set.player_two_games || null}
                           onChange={(e) =>
-                            handleSetScoreChange(
+                            handlePlayerTwoScoreChange(
                               index,
-                              "two",
                               Number.parseInt(e.target.value) || 0
                             )
                           }
@@ -305,9 +329,8 @@ export function EditMatchModal({
                             label={`${playerTwo?.first_name} - gemovi`}
                             value={set.player_two_games || 0}
                             onChange={(e) =>
-                              handleSetScoreChange(
+                              handlePlayerTwoGamesChange(
                                 index,
-                                "two",
                                 Number(e.target.value) || 0
                               )
                             }
@@ -338,7 +361,7 @@ export function EditMatchModal({
           <RadioGroup
             row
             value={isSurrender ? "yes" : "no"}
-            onChange={(e) => setIsSurrender(e.target.value === "yes")}
+            onChange={handleSurrenderChange}
           >
             <FormControlLabel value="no" control={<Radio />} label="Ne" />
             <FormControlLabel value="yes" control={<Radio />} label="Da" />
@@ -349,9 +372,7 @@ export function EditMatchModal({
               <Select
                 label="Pobjednik"
                 value={manualWinner || ""}
-                onChange={(e) =>
-                  setManualWinner((e.target.value as string) || null)
-                }
+                onChange={handleManualWinnerChange}
               >
                 <MenuItem value={localMatch.player_one_id}>
                   {playerOne?.first_name} {playerOne?.last_name}

@@ -3,7 +3,7 @@ import { supabase } from "../utils/supabase";
 import type { TGroup } from "../types.d";
 import { useLoader } from "../providers/Loader";
 import { getMonthRange } from "../utils/dateUtils";
-import dayjs, { Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
 
 export function useGroups(selectedMonth?: Dayjs | null) {
   const [groups, setGroups] = useState<TGroup[]>([]);

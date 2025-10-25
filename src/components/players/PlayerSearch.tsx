@@ -10,12 +10,16 @@ export default function PlayerSearch({
   searchTerm,
   onSearchChange,
 }: PlayerSearchProps) {
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onSearchChange(event.target.value);
+  };
+
   return (
     <TextField
       fullWidth
       placeholder="Pretraži igrače po imenu, prezimenu, emailu ili telefonu..."
       value={searchTerm}
-      onChange={(e) => onSearchChange(e.target.value)}
+      onChange={handleSearchChange}
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">

@@ -65,6 +65,16 @@ export default function CreateGroupModal({
     onClose();
   };
 
+  const handleGroupNameChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setGroupName(event.target.value);
+  };
+
+  const handleSelectedMembersChange = (_: any, newValue: TUser[]) => {
+    setSelectedMembers(newValue);
+  };
+
   return (
     <Dialog
       open={open}
@@ -98,7 +108,7 @@ export default function CreateGroupModal({
             autoComplete="group-name"
             autoFocus
             value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
+            onChange={handleGroupNameChange}
             size="small"
           />
         </Box>
@@ -117,9 +127,7 @@ export default function CreateGroupModal({
                 `${option.first_name} ${option.last_name}`
               }
               value={selectedMembers}
-              onChange={(_, newValue) =>
-                setSelectedMembers(newValue as TUser[])
-              }
+              onChange={handleSelectedMembersChange}
               renderInput={(params) => (
                 <TextField
                   {...params}

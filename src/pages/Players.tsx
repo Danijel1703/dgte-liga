@@ -1,6 +1,5 @@
 import { Person } from "@mui/icons-material";
 import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
 import { usePlayers } from "../hooks/usePlayers";
 import { useSearchFilter } from "../hooks/useFiltering";
 import PageContainer from "../components/common/PageContainer";

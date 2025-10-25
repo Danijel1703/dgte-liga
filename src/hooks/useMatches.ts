@@ -54,7 +54,9 @@ export function useMatches(
         if (selectedMonth) {
           const { start, end } = getMonthRange(selectedMonth);
           filteredMatches = filteredMatches.filter((match) => {
-            const matchDate = dayjs(match.created_at);
+            // Handle both Firebase Timestamp and regular Date/string
+            const dateValue = match.created_at?.toDate?.() || match.created_at;
+            const matchDate = dayjs(dateValue as string | number | Date);
             return matchDate.isBetween(start, end, "day", "[]");
           });
         }

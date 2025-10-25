@@ -1,6 +1,6 @@
 import { Person } from "@mui/icons-material";
 import { Alert, Box, Button, InputAdornment, TextField } from "@mui/material";
-import { useState } from "react";
+import React, { useState } from "react";
 import { supabase } from "../../utils/supabase";
 import { normalizeCroatianChars } from "../../utils/stringUtils";
 import type { TUser } from "../../types.d";
@@ -21,6 +21,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       setUsers(data);
     }
   };
+
+  // Load users on component mount
+  React.useEffect(() => {
+    getUsers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +56,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     setLoading(false);
   };
 
+  const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(event.target.value);
+  };
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
       {error && (
@@ -69,7 +78,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         autoComplete="username"
         autoFocus
         value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        onChange={handleUsernameChange}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
