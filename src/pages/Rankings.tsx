@@ -79,7 +79,7 @@ export const Rankings = () => {
         avatar: user.avatar,
         matchesPlayed: userMatches.filter((m) => !!m.winner_id).length,
         isDeleted: userMatches.some((m) =>
-          m.group.group_member.some(
+          m.group?.group_member.some(
             (gm) => gm.is_deleted && gm.user_id === user.user_id
           )
         ),

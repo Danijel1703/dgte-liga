@@ -11,7 +11,7 @@ export default function Home() {
   const { user } = useAuth();
   const { users } = useUsers();
   const [addAnnouncementOpen, setAddAnnouncementOpen] = useState(false);
-  const { announcements, loading, error, deleteAnnouncement, refresh } =
+  const { announcements, loading, deleteAnnouncement, refresh } =
     useAnnouncements();
 
   const isAdmin = useMemo(
@@ -57,7 +57,6 @@ export default function Home() {
         <AnnouncementList
           announcements={announcements}
           loading={loading}
-          error={error}
           deleteAnnouncement={deleteAnnouncement}
           isAdmin={isAdmin}
         />

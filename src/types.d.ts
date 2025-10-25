@@ -82,7 +82,7 @@ export type TMatch = {
   is_surrender: boolean;
   is_deleted: boolean;
   created_at?: Timestamp;
-  group: {
+  group?: {
     group_member: Array<{ is_deleted: boolean; user_id: string }>;
   };
 };

@@ -1,21 +1,19 @@
+import { Delete as DeleteIcon } from "@mui/icons-material";
 import {
   Box,
-  Paper,
-  Typography,
-  IconButton,
-  Alert,
   CircularProgress,
   Divider,
+  IconButton,
+  Paper,
+  Typography,
 } from "@mui/material";
-import { Delete as DeleteIcon } from "@mui/icons-material";
-import type { TAnnouncement } from "../types.d";
 import { format } from "date-fns";
 import { hr } from "date-fns/locale";
+import type { TAnnouncement } from "../types.d";
 
 interface AnnouncementListProps {
   announcements: TAnnouncement[];
   loading: boolean;
-  error: string | null;
   deleteAnnouncement: (id: string) => Promise<void>;
   isAdmin?: boolean;
 }
@@ -23,7 +21,6 @@ interface AnnouncementListProps {
 export default function AnnouncementList({
   announcements,
   loading,
-  error,
   deleteAnnouncement,
   isAdmin = false,
 }: AnnouncementListProps) {
@@ -50,14 +47,6 @@ export default function AnnouncementList({
       <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
         <CircularProgress />
       </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        Greška pri učitavanju obavjesti: {error}
-      </Alert>
     );
   }
 
