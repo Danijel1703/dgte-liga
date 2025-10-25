@@ -1,17 +1,24 @@
 import { EmojiEvents as Trophy } from "@mui/icons-material";
-import {
-  Box,
-  Card,
-  CardContent,
-  Container,
-  List,
-  ListItem,
-  ListItemText,
-  Paper,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Container, Paper, Typography } from "@mui/material";
+import { useAuth } from "../providers/AuthProvider";
+import { useMemo, useState } from "react";
+import { useUsers } from "../providers/UsersProvider";
+import { useAnnouncements } from "../hooks/useAnnouncements";
+import AddAnnouncementModal from "../components/AddAnnouncementModal";
+import AnnouncementList from "../components/AnnouncementList";
 
 export default function Home() {
+  const { user } = useAuth();
+  const { users } = useUsers();
+  const [addAnnouncementOpen, setAddAnnouncementOpen] = useState(false);
+  const { announcements, loading, deleteAnnouncement, refresh } =
+    useAnnouncements();
+
+  const isAdmin = useMemo(
+    () => users.find((u) => u.user_id === user?.id)?.is_admin,
+    [user, users]
+  );
+
   return (
     <Box
       sx={{ minHeight: "100vh", bgcolor: "background.default", width: "100%" }}
@@ -34,50 +41,29 @@ export default function Home() {
           </Typography>
         </Container>
       </Box>
-
-      {/* League Info */}
-      <Box sx={{ py: 8, px: 2, bgcolor: "grey.50" }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: "center", mb: 6 }}>
-            <Typography
-              variant="h3"
-              component="h2"
-              sx={{ fontWeight: "bold", mb: 2 }}
+      <Container maxWidth="md">
+        <Box sx={{ mb: 3 }}>
+          {isAdmin && (
+            <Button
+              variant="contained"
+              onClick={() => setAddAnnouncementOpen(true)}
+              sx={{ mb: 2 }}
             >
-              Kako funkcionira liga
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
-              Sve što trebate znati o ligi
-            </Typography>
-          </Box>
+              Dodaj Obavjest
+            </Button>
+          )}
+        </Box>
 
-          <Card sx={{ maxWidth: "800px", mx: "auto", boxShadow: 3 }}>
-            <CardContent sx={{ p: 4 }}>
-              <List>
-                <ListItem>
-                  <ListItemText primary="Skupine sadrže 4 igrača, na kraju mjeseca najbolje plasirani u skupini prelazi u jaču skupinu, a najlošije plasirani u slabiju skupinu" />
-                </ListItem>
-                <ListItem>
-                  <ListItemText primary="Svatko igra 3 meča u mjesecu." />
-                </ListItem>
-                <ListItem>
-                  <ListItemText primary="Uplata lige ide na početku mjeseca, odnosno kod rezervacije prvog meča će biti provjera, ukoliko nekome ne odgovara, može se sve dogovoriti sa voditeljem lige" />
-                </ListItem>
-                <ListItem>
-                  <ListItemText primary="Tijekom godine se planira 2 Kupa i 1 Masters" />
-                </ListItem>
-                <ListItem>
-                  <ListItemText primary="Poredak u ligi će imati utjecaja na pored na Kupu, a bodovi iz lige i sa Kupova će formirati popis od 12 najboljih igrača koji će imati pravo nastupiti na finalnom Mastersu" />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
-        </Container>
-      </Box>
-
+        <AnnouncementList
+          announcements={announcements}
+          loading={loading}
+          deleteAnnouncement={deleteAnnouncement}
+          isAdmin={isAdmin}
+        />
+      </Container>
       {/* Footer */}
       <Paper sx={{ mt: 4 }} elevation={0}>
-        <Container maxWidth="md">
+        <Container>
           <Box sx={{ textAlign: "center" }}>
             <Box
               sx={{
@@ -102,6 +88,12 @@ export default function Home() {
           </Box>
         </Container>
       </Paper>
+
+      <AddAnnouncementModal
+        open={addAnnouncementOpen}
+        onClose={() => setAddAnnouncementOpen(false)}
+        onSuccess={refresh}
+      />
     </Box>
   );
 }

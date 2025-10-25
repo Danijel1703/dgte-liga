@@ -77,17 +77,13 @@ export default function AddPlayer() {
       const userId = data.user?.id;
       if (userId) {
         // Insert user into user table
-        const { error: dbError } = await supabase.from("user").insert({
+        await supabase.from("user").insert({
           user_id: userId,
           first_name: formData.firstName,
           last_name: formData.lastName,
           email: normalizeCroatianChars(email),
           phone: formData.phoneNumber,
         });
-
-        if (dbError) {
-          throw dbError;
-        }
 
         setSuccess(
           `Igrač ${formData.firstName} ${formData.lastName} je uspješno dodan!`

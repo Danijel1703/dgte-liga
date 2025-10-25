@@ -5,7 +5,6 @@ import {
   Group,
   MoreVert,
   Person,
-  // Refresh,
 } from "@mui/icons-material";
 import {
   Avatar,
@@ -119,7 +118,7 @@ export default function GroupsPage() {
         };
       });
 
-      let filteredGroups = showOnlyMine
+      const filteredGroups = showOnlyMine
         ? mappedGroups.filter((g) =>
             g.members.map((t) => t.user_id).includes(user?.id as string)
           )

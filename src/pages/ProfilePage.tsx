@@ -221,7 +221,7 @@ export default function ProfilePage() {
               </Box>
             </Box>
           </CardContent>
-        </Card>{" "}
+        </Card>
       </Box>
     </Container>
   );
