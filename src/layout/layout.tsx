@@ -16,15 +16,26 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { users } = useUsers();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     if (user && users.length > 0) {
       const currentUser = users.find((u) => u.user_id === user.id);
-      if (currentUser && !currentUser.paid && !currentUser.is_viewer) {
-        setShowPaymentModal(true);
+
+      if (currentUser) {
+        const shouldShow = !currentUser.paid && !currentUser.is_viewer;
+
+        if (shouldShow) {
+          if (!dismissed && !showPaymentModal) {
+            setShowPaymentModal(true);
+          }
+        } else {
+          setShowPaymentModal(false);
+          if (dismissed) setDismissed(false); // Reset dismissal if user becomes paid
+        }
       }
     }
-  }, [user, users]);
+  }, [user, users, dismissed, showPaymentModal]);
 
   return (
     <>
@@ -39,7 +50,10 @@ export default function Layout({ children }: { children: ReactNode }) {
       </div>
       <PaymentReminderModal
         open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setDismissed(true);
+        }}
       />
     </>
   );
