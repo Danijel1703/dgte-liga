@@ -29,6 +29,7 @@ export type TUser = {
   is_admin: boolean;
   is_viewer: boolean;
   is_deleted: boolean;
+  paid: boolean;
 };
 
 /**

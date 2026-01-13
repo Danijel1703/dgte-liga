@@ -1,5 +1,3 @@
-"use client";
-
 import { Delete, Person, Phone, Search } from "@mui/icons-material";
 import {
   Avatar,
@@ -17,6 +15,7 @@ import {
   TextField,
   Typography,
   Alert,
+  Checkbox,
 } from "@mui/material";
 import { sortBy } from "lodash-es";
 import { useState } from "react";
@@ -63,11 +62,36 @@ export default function Players() {
 
       setSuccess(`Igrač ${playerName} je uspješno obrisan!`);
       refresh(); // Refresh the users list
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting player:", error);
-      setError(error.message || "Greška pri brisanju igrača");
+      setError((error as Error).message || "Greška pri brisanju igrača");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTogglePaid = async (
+    userId: string,
+    currentPaidStatus: boolean
+  ) => {
+    try {
+      if (!me?.is_admin) return;
+
+      const { error } = await supabase
+        .from("user")
+        .update({ paid: !currentPaidStatus })
+        .eq("user_id", userId);
+
+      if (error) {
+        throw error;
+      }
+
+      refresh();
+    } catch (error: unknown) {
+      console.error("Error updating paid status:", error);
+      setError(
+        (error as Error).message || "Greška pri ažuriranju statusa plaćanja"
+      );
     }
   };
 
@@ -133,6 +157,11 @@ export default function Players() {
               <TableCell sx={{ color: "white", fontWeight: 600 }}>
                 Telefon
               </TableCell>
+              <TableCell
+                sx={{ color: "white", fontWeight: 600, textAlign: "center" }}
+              >
+                Plaćeno
+              </TableCell>
               <TableCell sx={{ color: "white", fontWeight: 600 }}>
                 Akcije
               </TableCell>
@@ -191,6 +220,16 @@ export default function Players() {
                           {player.phone}
                         </a>
                       </Box>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Checkbox
+                        checked={!!player.paid}
+                        disabled={!me?.is_admin || loading}
+                        onChange={() =>
+                          handleTogglePaid(player.user_id, !!player.paid)
+                        }
+                        color="primary"
+                      />
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: "flex", gap: 1 }}>

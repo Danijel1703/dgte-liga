@@ -38,7 +38,7 @@ import { supabase } from "../utils/supabase";
 
 dayjs.extend(isBetween);
 
-export const colors = [
+const colors = [
   "#1976d2", // primary.main (blue)
   "#9c27b0", // secondary.main (purple)
   "#d32f2f", // error.main (red)
@@ -107,12 +107,43 @@ export default function GroupsPage() {
         return {
           ...group,
           members: group.members.map((member) => {
+            const matchesWon = group.match.filter(
+              (match) => match.winner_id === member.user_id
+            );
+            const points = matchesWon.length * 3;
+
+            // Calculate gems won (sum of won sets/games in matches) -> Assuming gems means games won here as per context "wins in group" usually means points, "gems" likely implies set/game wins
+            // Re-reading user request: "then by gems won in the group"
+            // Let's assume 'gems' means 'sets' or 'games' won. In TMatch, we have 'sets'.
+            // However, usually in tennis 'gems' = 'games'.
+            // Let's look at TMatch structure in types.d.ts: sets: TSet[]. TSet { player_one_games, player_two_games }.
+            // So we need to sum games won by this player in all matches in this group.
+
+            let gems = 0;
+            const playerMatches = group.match.filter(
+              (m) =>
+                m.player_one_id === member.user_id ||
+                m.player_two_id === member.user_id
+            );
+
+            playerMatches.forEach((match) => {
+              const isPlayerOne = match.player_one_id === member.user_id;
+
+              if (match.sets && Array.isArray(match.sets)) {
+                match.sets.forEach((set) => {
+                  if (set) {
+                    gems += isPlayerOne
+                      ? set.player_one_games || 0
+                      : set.player_two_games || 0;
+                  }
+                });
+              }
+            });
+
             return {
               ...member,
-              points_in_group:
-                group.match.filter(
-                  (match) => match.winner_id === member.user_id
-                ).length * 3,
+              points_in_group: points,
+              gems_in_group: gems,
             };
           }),
         };
@@ -123,12 +154,6 @@ export default function GroupsPage() {
             g.members.map((t) => t.user_id).includes(user?.id as string)
           )
         : mappedGroups;
-
-      // The previous client-side date filtering logic is now removed/redundant
-      // because the groups are already filtered by created_at in the query.
-      // If you need to filter based on match dates *within* the month as a secondary criteria,
-      // you would need a more complex Supabase function or view, but for simple
-      // group lifecycle filtering, the server-side created_at filter is best.
 
       setGroups(filteredGroups);
     }
@@ -254,200 +279,6 @@ export default function GroupsPage() {
     await initialize();
   };
 
-  // const handleGenerateGroups = async () => {
-  //   try {
-  //     setLoading(true);
-
-  //     const currentMonth = dayjs();
-  //     const previousMonth = currentMonth.subtract(1, "month");
-  //     const startOfPrevMonth = previousMonth.startOf("month");
-  //     const endOfPrevMonth = previousMonth.endOf("month");
-
-  //     const membersPerGroup = 4;
-
-  //     // 1. Fetch Previous Groups and Matches
-  //     const { data: prevGroups } = (await supabase
-  //       .from("group")
-  //       .select(
-  //         `
-  //       *,
-  //       members:group_member (
-  //         *,
-  //         user:user_id (*)
-  //       ),
-  //       match (*)
-  //     `
-  //       )
-  //       .eq("is_deleted", false)
-  //       .eq("members.is_deleted", false)
-  //       .gte("created_at", startOfPrevMonth.toISOString())
-  //       .lte("created_at", endOfPrevMonth.toISOString())) as {
-  //       data: TGroup[] | null;
-  //     };
-
-  //     if (!prevGroups || prevGroups.length === 0) {
-  //       console.log(
-  //         "No groups found for previous month:",
-  //         previousMonth.format("MM/YYYY")
-  //       );
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     // 2. Calculate Rankings (Points)
-  //     const groupsWithRankings = prevGroups.map((group) => {
-  //       const prevMonthMatches = group.match.filter((match: any) => {
-  //         const matchDate = dayjs(match.created_at);
-  //         return matchDate.isBetween(
-  //           startOfPrevMonth,
-  //           endOfPrevMonth,
-  //           "day",
-  //           "[]"
-  //         );
-  //       });
-
-  //       const membersWithPoints = group.members.map((member: any) => ({
-  //         ...member,
-  //         points_in_group:
-  //           prevMonthMatches.filter(
-  //             (match: any) => match.winner_id === member.user_id
-  //           ).length * 3,
-  //       }));
-
-  //       // Sort members by points (best to worst/descending)
-  //       const sortedMembers = reverse(
-  //         sortBy(membersWithPoints, "points_in_group")
-  //       );
-
-  //       return {
-  //         ...group,
-  //         members: sortedMembers,
-  //       };
-  //     });
-
-  //     // Sort groups by name (Skupina 1, Skupina 2, ...) to establish order (0 is highest)
-  //     const sortedGroups = sortBy(groupsWithRankings, "name") as (TGroup & {
-  //       members: TGroupMember[];
-  //     })[];
-
-  //     const numberOfGroups = sortedGroups.length;
-  //     const uniqueGroupNames = [
-  //       ...new Set(sortedGroups.map((group) => group.name)),
-  //     ].sort();
-
-  //     const newGroups: any[] = [];
-
-  //     // 3. CORE LOGIC: Promotion and Relegation
-  //     for (let i = 0; i < numberOfGroups; i++) {
-  //       const newGroupMembers: any[] = [];
-  //       const currentGroup = sortedGroups[i];
-  //       const currentGroupMembers = currentGroup.members;
-
-  //       // Ensure the group has enough members to process the top 4
-  //       if (currentGroupMembers.length < 4) {
-  //         // If a group is not full, it makes promotion/relegation complex.
-  //         // For simplicity, we only run logic if minimum members exist.
-  //         // Handle groups with less than 4 members gracefully (e.g., keep them all).
-  //         if (currentGroupMembers.length > 0) {
-  //           newGroupMembers.push(...currentGroupMembers);
-  //         }
-  //       } else {
-  //         // --- Slot 1: Rank 1 (Igor Mijatov's Slot) ---
-  //         if (i === 0) {
-  //           // Highest Group (i=0): Rank 1 stays (Igor Mijatov)
-  //           newGroupMembers.push(currentGroupMembers[0]);
-  //         } else {
-  //           // All other Groups: Rank 4 from the higher group (i-1) is RELEGATED
-  //           const higherGroup = sortedGroups[i - 1];
-  //           if (higherGroup.members.length >= 4) {
-  //             newGroupMembers.push(higherGroup.members[3]); // Rank 4 from i-1 (e.g., Dario Jagarinec to Skupina 2)
-  //           } else {
-  //             // Fallback: If higher group wasn't full, keep current Rank 1
-  //             newGroupMembers.push(currentGroupMembers[0]);
-  //           }
-  //         }
-
-  //         // --- Slot 2 & 3: Rank 2 and Rank 3 always stay ---
-  //         newGroupMembers.push(currentGroupMembers[1]); // Rank 2 stays
-  //         newGroupMembers.push(currentGroupMembers[2]); // Rank 3 stays
-
-  //         // --- Slot 4: Rank 4 Player ---
-  //         if (i === numberOfGroups - 1) {
-  //           // Lowest Group (i=N-1): Rank 4 stays (Marko Jović)
-  //           newGroupMembers.push(currentGroupMembers[3]);
-  //         } else {
-  //           // All other Groups: Rank 1 from the lower group (i+1) is PROMOTED
-  //           const lowerGroup = sortedGroups[i + 1];
-  //           if (lowerGroup.members.length > 0) {
-  //             newGroupMembers.push(lowerGroup.members[0]); // Rank 1 from i+1 (e.g., Krešimir Lončarević to Skupina 1)
-  //           } else {
-  //             // Fallback: If lower group was empty, keep current Rank 4
-  //             newGroupMembers.push(currentGroupMembers[3]);
-  //           }
-  //         }
-  //       }
-
-  //       // --- Finalizing Group Members (Crucial for eliminating duplicates) ---
-
-  //       // Remove duplicates and limit to membersPerGroup
-  //       const uniqueMembers = newGroupMembers
-  //         .filter(
-  //           (member: any, index: number, self: any[]) =>
-  //             index === self.findIndex((m: any) => m.user_id === member.user_id)
-  //         )
-  //         .slice(0, membersPerGroup);
-
-  //       if (uniqueMembers.length === 0) continue;
-
-  //       // 4. Create New Group and Insert Members
-  //       const groupColor = currentGroup.color || colors[i % colors.length];
-  //       const groupName =
-  //         uniqueGroupNames[i] || `Grupa ${String.fromCharCode(65 + i)}`;
-
-  //       const { data: newGroup } = await supabase
-  //         .from("group")
-  //         .insert({
-  //           name: groupName,
-  //           color: groupColor,
-  //           is_deleted: false,
-  //         })
-  //         .select("*");
-
-  //       if (newGroup && newGroup[0]) {
-  //         const memberInserts = uniqueMembers.map((member: any) => ({
-  //           group_id: newGroup[0].id,
-  //           user_id: member.user_id,
-  //           is_deleted: false,
-  //         }));
-
-  //         const { error: memberError } = await supabase
-  //           .from("group_member")
-  //           .insert(memberInserts);
-
-  //         if (memberError) {
-  //           console.error("Error inserting group members:", memberError);
-  //           continue;
-  //         }
-
-  //         newGroups.push({
-  //           ...newGroup[0],
-  //           members: uniqueMembers,
-  //         });
-  //       }
-  //     }
-
-  //     await initialize();
-  //   } catch (error) {
-  //     console.error("Error generating groups:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const createSchedule = async () => {
-  //   const matches = await generateSchedule();
-  // };
-
   return (
     <>
       <Container maxWidth="lg" className="py-6">
@@ -491,16 +322,6 @@ export default function GroupsPage() {
             >
               Kreiraj grupu
             </Button>
-            {/* <Button
-              variant="outlined"
-              onClick={handleGenerateGroups}
-              startIcon={<Refresh />}
-              disabled={
-                !selectedMonth || !selectedMonth.isSame(dayjs(), "month")
-              }
-            >
-              Generiraj grupe
-            </Button> */}
           </Box>
         )}
         <div className="flex flex-wrap gap-4">
@@ -549,35 +370,46 @@ export default function GroupsPage() {
                       Članovi skupine:
                     </Typography>
                     <div className="flex flex-col gap-2">
-                      {reverse(sortBy(group.members, "points_in_group")).map(
-                        (member, index) => (
-                          <div
-                            key={member.user.user_id}
-                            className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                          >
-                            <p className="mx-2 font-semibold">{index + 1}.</p>
-                            <Avatar className="w-8 h-8 text-sm bg-blue-500">
-                              {member.user.avatar}
-                            </Avatar>
-                            <div className="min-w-0 flex-1 flex justify-between mx-2">
-                              <Typography
-                                variant="body2"
-                                className="font-medium text-gray-800 truncate"
-                              >
-                                {member.user.first_name}
-                                &nbsp;
-                                {member.user.last_name}
-                              </Typography>
+                      {reverse(
+                        sortBy(group.members, [
+                          "points_in_group",
+                          "gems_in_group",
+                        ])
+                      ).map((member, index) => (
+                        <div
+                          key={member.user.user_id}
+                          className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <p className="mx-2 font-semibold">{index + 1}.</p>
+                          <Avatar className="w-8 h-8 text-sm bg-blue-500">
+                            {member.user.avatar}
+                          </Avatar>
+                          <div className="min-w-0 flex-1 flex justify-between mx-2 items-center">
+                            <Typography
+                              variant="body2"
+                              className="font-medium text-gray-800 truncate"
+                            >
+                              {member.user.first_name}
+                              &nbsp;
+                              {member.user.last_name}
+                            </Typography>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                gap: 1,
+                                alignItems: "center",
+                              }}
+                            >
                               <Typography
                                 variant="body2"
                                 className="font-medium text-gray-800 truncate"
                               >
                                 {member.points_in_group}
                               </Typography>
-                            </div>
+                            </Box>
                           </div>
-                        )
-                      )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
