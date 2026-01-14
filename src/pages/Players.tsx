@@ -157,11 +157,13 @@ export default function Players() {
               <TableCell sx={{ color: "white", fontWeight: 600 }}>
                 Telefon
               </TableCell>
-              <TableCell
-                sx={{ color: "white", fontWeight: 600, textAlign: "center" }}
-              >
-                Plaćeno
-              </TableCell>
+              {(me?.is_admin || me?.is_viewer) && (
+                <TableCell
+                  sx={{ color: "white", fontWeight: 600, textAlign: "center" }}
+                >
+                  Plaćeno
+                </TableCell>
+              )}
               <TableCell sx={{ color: "white", fontWeight: 600 }}>
                 Akcije
               </TableCell>
@@ -221,16 +223,18 @@ export default function Players() {
                         </a>
                       </Box>
                     </TableCell>
-                    <TableCell align="center">
-                      <Checkbox
-                        checked={!!player.paid}
-                        disabled={!me?.is_admin || loading}
-                        onChange={() =>
-                          handleTogglePaid(player.user_id, !!player.paid)
-                        }
-                        color="primary"
-                      />
-                    </TableCell>
+                    {(me?.is_admin || me?.is_viewer) && (
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={!!player.paid}
+                          disabled={!me?.is_admin || loading}
+                          onChange={() =>
+                            handleTogglePaid(player.user_id, !!player.paid)
+                          }
+                          color="primary"
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Box sx={{ display: "flex", gap: 1 }}>
                         {me?.is_admin && player.user_id !== authUser?.id && (
