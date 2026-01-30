@@ -413,7 +413,7 @@ export default function GroupsPage() {
                               >
                                 {member.points_in_group}
                                 <span className="text-gray-500 text-xs text-nowrap">
-                                  ({member.gem_difference > 0 ? "+" : ""}
+                                  ({(member.gem_difference ?? 0) > 0 ? "+" : ""}
                                   {member.gem_difference})
                                 </span>
                               </Typography>
