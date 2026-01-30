@@ -43,6 +43,8 @@ export type TStatus = "waiting" | "played" | "surrendered";
 export type TGroupMember = {
   user_id: string;
   points_in_group?: number;
+  gems_in_group?: number;
+  gem_difference?: number;
   user: TUser;
 };
 

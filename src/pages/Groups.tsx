@@ -82,7 +82,7 @@ export default function GroupsPage() {
         user:user_id (*)
       ),
       match (*)
-    `
+    `,
       )
       .eq("is_deleted", false) // Filter groups where is_deleted is false
       .eq("members.is_deleted", false); // Filter members where is_deleted is false
@@ -108,7 +108,7 @@ export default function GroupsPage() {
           ...group,
           members: group.members.map((member) => {
             const matchesWon = group.match.filter(
-              (match) => match.winner_id === member.user_id
+              (match) => match.winner_id === member.user_id,
             );
             const points = matchesWon.length * 3;
 
@@ -120,10 +120,12 @@ export default function GroupsPage() {
             // So we need to sum games won by this player in all matches in this group.
 
             let gems = 0;
+            let gemsLost = 0;
+
             const playerMatches = group.match.filter(
               (m) =>
                 m.player_one_id === member.user_id ||
-                m.player_two_id === member.user_id
+                m.player_two_id === member.user_id,
             );
 
             playerMatches.forEach((match) => {
@@ -135,6 +137,9 @@ export default function GroupsPage() {
                     gems += isPlayerOne
                       ? set.player_one_games || 0
                       : set.player_two_games || 0;
+                    gemsLost += isPlayerOne
+                      ? set.player_two_games || 0
+                      : set.player_one_games || 0;
                   }
                 });
               }
@@ -144,6 +149,7 @@ export default function GroupsPage() {
               ...member,
               points_in_group: points,
               gems_in_group: gems,
+              gem_difference: gems - gemsLost,
             };
           }),
         };
@@ -151,7 +157,7 @@ export default function GroupsPage() {
 
       const filteredGroups = showOnlyMine
         ? mappedGroups.filter((g) =>
-            g.members.map((t) => t.user_id).includes(user?.id as string)
+            g.members.map((t) => t.user_id).includes(user?.id as string),
           )
         : mappedGroups;
 
@@ -172,7 +178,7 @@ export default function GroupsPage() {
 
   const handleMenuClick = (
     event: React.MouseEvent<HTMLElement>,
-    groupId: string
+    groupId: string,
   ) => {
     setAnchorEl(event.currentTarget);
     const group = groups.find((g) => g.id === groupId);
@@ -228,12 +234,12 @@ export default function GroupsPage() {
       .eq("id", selectedGroup.id);
 
     const currentMemberIds = (selectedGroup.members || []).map(
-      (m) => m.user_id
+      (m) => m.user_id,
     );
     const nextMemberIds = members.map((m) => m.user_id);
 
     const toRemove = currentMemberIds.filter(
-      (id) => !nextMemberIds.includes(id)
+      (id) => !nextMemberIds.includes(id),
     );
     const toAdd = nextMemberIds.filter((id) => !currentMemberIds.includes(id));
 
@@ -253,7 +259,7 @@ export default function GroupsPage() {
         .in("user_id", toAdd);
 
       const existingIds = (existing || []).map(
-        (e: { user_id: string }) => e.user_id
+        (e: { user_id: string }) => e.user_id,
       );
       const needUndelete = toAdd.filter((id) => existingIds.includes(id));
       const needInsert = toAdd.filter((id) => !existingIds.includes(id));
@@ -373,8 +379,9 @@ export default function GroupsPage() {
                       {reverse(
                         sortBy(group.members, [
                           "points_in_group",
+                          "gem_difference",
                           "gems_in_group",
-                        ])
+                        ]),
                       ).map((member, index) => (
                         <div
                           key={member.user.user_id}
@@ -405,6 +412,10 @@ export default function GroupsPage() {
                                 className="font-medium text-gray-800 truncate"
                               >
                                 {member.points_in_group}
+                                <span className="text-gray-500 text-xs text-nowrap">
+                                  ({member.gem_difference > 0 ? "+" : ""}
+                                  {member.gem_difference})
+                                </span>
                               </Typography>
                             </Box>
                           </div>
