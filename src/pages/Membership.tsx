@@ -223,14 +223,12 @@ export default function Membership() {
                                   className={cn("text-center p-1", isCurrent && "bg-primary/5")}
                                 >
                                   <Tooltip>
-                                    <TooltipTrigger
-                                      render={
-                                        <div className="flex items-center justify-center gap-1">
+                                    <TooltipTrigger asChild>
+                                      <div className="flex items-center justify-center gap-1">
                                           {/* Plaćeno radio */}
                                           <button
                                             onClick={() => isAdmin && !paidMonth && handleToggle(player.user_id, month)}
                                             disabled={isToggling || !isAdmin || paidMonth}
-                                            title="Plaćeno"
                                             className={cn(
                                               "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
                                               paidMonth
@@ -247,7 +245,6 @@ export default function Membership() {
                                           <button
                                             onClick={() => isAdmin && paidMonth && handleToggle(player.user_id, month)}
                                             disabled={isToggling || !isAdmin || !paidMonth || isFuture}
-                                            title="Neplaćeno"
                                             className={cn(
                                               "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
                                               !paidMonth && !isFuture
@@ -261,8 +258,7 @@ export default function Membership() {
                                             {!paidMonth && !isFuture && <div className="w-2 h-2 rounded-full bg-white" />}
                                           </button>
                                         </div>
-                                      }
-                                    />
+                                    </TooltipTrigger>
                                     <TooltipContent side="top" className="text-xs">
                                       {FULL_MONTHS[month - 1]}: {paidMonth ? "✓ Plaćeno" : "✗ Nije plaćeno"}
                                     </TooltipContent>

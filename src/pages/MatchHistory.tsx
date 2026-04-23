@@ -17,6 +17,7 @@ import { supabase } from "../utils/supabase";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { orderBy } from "lodash-es";
+import { MatchDetailModal, type JoinedMatchDetail } from "@/components/MatchDetailModal";
 
 const AVATAR_COLORS = [
   "bg-blue-600", "bg-violet-600",
@@ -26,10 +27,7 @@ function avatarColor(first: string, last: string) {
   return AVATAR_COLORS[(first.charCodeAt(0) + last.charCodeAt(0)) % AVATAR_COLORS.length];
 }
 
-type JoinedMatch = TMatch & {
-  player_one: TUser;
-  player_two: TUser;
-};
+type JoinedMatch = JoinedMatchDetail;
 
 // ── Multi-select player dropdown ──────────────────────────────────────────────
 function PlayerMultiSelect({
@@ -138,6 +136,7 @@ export default function MatchHistory() {
   const [matches, setMatches] = useState<JoinedMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<JoinedMatch | null>(null);
   const { users } = useUsers();
   const { user } = useAuth();
 
@@ -255,8 +254,9 @@ export default function MatchHistory() {
                     return (
                       <TableRow
                         key={match.id}
+                        onClick={() => setSelectedMatch(match)}
                         className={cn(
-                          "hover:bg-muted/30 transition-colors",
+                          "hover:bg-muted/30 transition-colors cursor-pointer",
                           isMyMatch && "bg-primary/[0.02]"
                         )}
                       >
@@ -321,6 +321,12 @@ export default function MatchHistory() {
           </CardContent>
         </Card>
       )}
+
+      <MatchDetailModal
+        open={selectedMatch !== null}
+        match={selectedMatch}
+        onClose={() => setSelectedMatch(null)}
+      />
     </div>
   );
 }
