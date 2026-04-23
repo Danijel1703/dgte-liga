@@ -1,35 +1,61 @@
-import { Close as CloseIcon, Save as SaveIcon } from "@mui/icons-material";
-import {
-  Avatar,
-  Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  Grid,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-  useMediaQuery,
-  useTheme,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-} from "@mui/material";
+import { Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { TMatch, TUser, TGroup, TStatus } from "../types";
+
 
 export type JoinedMatch = TMatch & {
   player_one: TUser;
   player_two: TUser;
   group: TGroup;
 };
+
+const AVATAR_COLORS = [
+  "bg-blue-600", "bg-violet-600",
+  "bg-emerald-600", "bg-amber-600",
+  "bg-rose-600",
+];
+function avatarColor(first: string, last: string) {
+  return AVATAR_COLORS[(first.charCodeAt(0) + last.charCodeAt(0)) % AVATAR_COLORS.length];
+}
+
+function PlayerChip({ player, groupName, groupColor }: { player: TUser; groupName?: string; groupColor?: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`w-10 h-10 rounded-full ${avatarColor(player.first_name, player.last_name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+        {player.first_name[0]}{player.last_name[0]}
+      </div>
+      <div>
+        <p className="font-semibold text-sm">{player.first_name} {player.last_name}</p>
+        {groupName && (
+          <span
+            className="text-xs font-medium px-1.5 py-0.5 rounded-full text-white"
+            style={{ backgroundColor: groupColor || "#6366f1" }}
+          >
+            {groupName}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function EditMatchModal({
   open,
@@ -40,15 +66,8 @@ export function EditMatchModal({
   open: boolean;
   match: JoinedMatch | null;
   onClose: () => void;
-  onSave: (
-    updated: JoinedMatch,
-    winnerId: string | null,
-    status: TStatus,
-    isSurrender: boolean
-  ) => Promise<void>;
+  onSave: (updated: JoinedMatch, winnerId: string | null, status: TStatus, isSurrender: boolean) => Promise<void>;
 }) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [localMatch, setLocalMatch] = useState<JoinedMatch | null>(match);
   const [isSurrender, setIsSurrender] = useState(false);
   const [manualWinner, setManualWinner] = useState<string | null>(null);
@@ -66,36 +85,21 @@ export function EditMatchModal({
 
   const playerOne = localMatch?.player_one;
   const playerTwo = localMatch?.player_two;
-  const playerOneGroup = localMatch?.group;
-  const playerTwoGroup = localMatch?.group;
+  const group = localMatch?.group;
 
-  const handleSetScoreChange = (
-    setIndex: number,
-    player: "one" | "two",
-    value: number
-  ) => {
+  const handleSetScoreChange = (setIndex: number, player: "one" | "two", value: number) => {
     if (!localMatch) return;
-    const updated: JoinedMatch = {
-      ...localMatch,
-      sets: [...localMatch.sets],
-    } as JoinedMatch;
+    const updated: JoinedMatch = { ...localMatch, sets: [...localMatch.sets] };
     if (player === "one") {
-      updated.sets[setIndex] = {
-        ...updated.sets[setIndex],
-        player_one_games: Math.max(0, value),
-      };
+      updated.sets[setIndex] = { ...updated.sets[setIndex], player_one_games: Math.max(0, value) };
     } else {
-      updated.sets[setIndex] = {
-        ...updated.sets[setIndex],
-        player_two_games: Math.max(0, value),
-      };
+      updated.sets[setIndex] = { ...updated.sets[setIndex], player_two_games: Math.max(0, value) };
     }
     setLocalMatch(updated);
   };
 
   const determineWinner = (m: TMatch): string | null => {
-    let p1 = 0;
-    let p2 = 0;
+    let p1 = 0, p2 = 0;
     m.sets.forEach((s) => {
       if (s.player_one_games > s.player_two_games) p1++;
       else if (s.player_two_games > s.player_one_games) p2++;
@@ -108,287 +112,168 @@ export function EditMatchModal({
   const handleSave = async () => {
     if (!localMatch) return;
     const calculatedWinner = determineWinner(localMatch);
-    const status: TStatus = isSurrender
-      ? "surrendered"
-      : calculatedWinner
-      ? "played"
-      : "waiting";
+    const status: TStatus = isSurrender ? "surrendered" : calculatedWinner ? "played" : "waiting";
     const winnerId = isSurrender ? manualWinner : calculatedWinner;
     await onSave(localMatch, winnerId, status, isSurrender);
   };
 
+  const gameOptions = [...Array(8).keys()]; // 0-7
+
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      fullScreen={isMobile}
-      sx={{
-        "& .MuiDialog-paper": {
-          margin: { xs: 0, sm: 2 },
-          maxHeight: { xs: "100vh", sm: "90vh" },
-          borderRadius: { xs: 0, sm: 2 },
-        },
-      }}
-    >
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography
-            variant="h6"
-            sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
-          >
-            Unesite rezultate meča
-          </Typography>
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={3}
-          gap={2}
-        >
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={2}
-            width={{ xs: "100%", sm: "auto" }}
-          >
-            <Avatar
-              sx={{ width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}
-            >
-              {playerOne?.avatar}
-            </Avatar>
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
-              >
-                {playerOne?.first_name} {playerOne?.last_name}
-              </Typography>
-              <Chip
-                label={playerOneGroup?.name}
-                size="small"
-                sx={{ background: playerOneGroup?.color, color: "white" }}
-              />
-            </Box>
-          </Box>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Unesite rezultate meča</DialogTitle>
+        </DialogHeader>
 
-          <Typography
-            variant="h5"
-            color="text.secondary"
-            sx={{ fontSize: { xs: "1.1rem", sm: "1.5rem" } }}
-          >
-            PROTIV
-          </Typography>
+        {/* Players header */}
+        {playerOne && playerTwo && (
+          <div className="flex items-center justify-between gap-2 py-2">
+            <PlayerChip player={playerOne} groupName={group?.name} groupColor={group?.color} />
+            <span className="text-xs font-bold text-muted-foreground px-2">PROTIV</span>
+            <PlayerChip player={playerTwo} groupName={group?.name} groupColor={group?.color} />
+          </div>
+        )}
 
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="flex-end"
-            gap={2}
-            width={{ xs: "100%", sm: "auto" }}
-          >
-            <Box textAlign={{ xs: "left", sm: "right" }}>
-              <Typography
-                variant="h6"
-                sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
-              >
-                {playerTwo?.first_name} {playerTwo?.last_name}
-              </Typography>
-              <Chip
-                label={playerTwoGroup?.name}
-                size="small"
-                sx={{ background: playerTwoGroup?.color, color: "white" }}
-              />
-            </Box>
-            <Avatar
-              sx={{ width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}
-            >
-              {playerTwo?.avatar}
-            </Avatar>
-          </Box>
-        </Box>
+        <Separator />
 
-        <Typography
-          variant="h6"
-          gutterBottom
-          sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
-        >
-          Rezultati setova
-        </Typography>
-
-        {localMatch
-          ? localMatch.sets.map((set, index) => {
-              const isTieBreak = index + 1 === 3;
-              return (
-                <Box key={index} mb={3} sx={{ width: "100%" }}>
-                  <Typography
-                    variant="subtitle1"
-                    gutterBottom
-                    sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}
-                  >
-                    {isTieBreak ? "Tie break" : index + 1 + ". set"}
-                  </Typography>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
-                    <Grid width="40%">
-                      {isTieBreak ? (
-                        <TextField
-                          fullWidth
+        {/* Set scores */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold">Rezultati setova</h3>
+          {localMatch?.sets.map((set, index) => {
+            const isTieBreak = index + 1 === 3;
+            return (
+              <div key={index} className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  {isTieBreak ? "Tie break" : `${index + 1}. set`}
+                </Label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    {isTieBreak ? (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">{playerOne?.first_name}</p>
+                        <Input
                           type="number"
-                          label={`${playerOne?.first_name} - bodovi`}
-                          value={set.player_one_games || null}
-                          onChange={(e) =>
-                            handleSetScoreChange(
-                              index,
-                              "one",
-                              Number.parseInt(e.target.value) || 0
-                            )
-                          }
-                          inputProps={{ min: 0, max: 20 }}
+                          min={0}
+                          max={20}
+                          value={set.player_one_games || ""}
+                          onChange={(e) => handleSetScoreChange(index, "one", parseInt(e.target.value) || 0)}
                         />
-                      ) : (
-                        <FormControl fullWidth>
-                          <InputLabel>{`${playerOne?.first_name} - gemovi`}</InputLabel>
-                          <Select
-                            label={`${playerOne?.first_name} - gemovi`}
-                            value={set.player_one_games || 0}
-                            onChange={(e) =>
-                              handleSetScoreChange(
-                                index,
-                                "one",
-                                Number(e.target.value) || 0
-                              )
-                            }
-                          >
-                            {[...Array(8).keys()].map((gameCount) => (
-                              <MenuItem key={gameCount} value={gameCount}>
-                                {gameCount}
-                              </MenuItem>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">{playerOne?.first_name}</p>
+                        <Select
+                          value={String(set.player_one_games || 0)}
+                          onValueChange={(v) => handleSetScoreChange(index, "one", Number(v))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {gameOptions.map((n) => (
+                              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                             ))}
-                          </Select>
-                        </FormControl>
-                      )}
-                    </Grid>
-                    <Grid textAlign="center">
-                      <Typography variant="h6">-</Typography>
-                    </Grid>
-                    <Grid width="40%">
-                      {isTieBreak ? (
-                        <TextField
-                          fullWidth
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-lg font-bold text-muted-foreground pt-5">—</span>
+                  <div className="flex-1">
+                    {isTieBreak ? (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">{playerTwo?.first_name}</p>
+                        <Input
                           type="number"
-                          label={`${playerTwo?.first_name} - bodovi`}
-                          value={set.player_two_games || null}
-                          onChange={(e) =>
-                            handleSetScoreChange(
-                              index,
-                              "two",
-                              Number.parseInt(e.target.value) || 0
-                            )
-                          }
-                          inputProps={{ min: 0, max: 20 }}
+                          min={0}
+                          max={20}
+                          value={set.player_two_games || ""}
+                          onChange={(e) => handleSetScoreChange(index, "two", parseInt(e.target.value) || 0)}
                         />
-                      ) : (
-                        <FormControl fullWidth>
-                          <InputLabel>{`${playerTwo?.first_name} - gemovi`}</InputLabel>
-                          <Select
-                            label={`${playerTwo?.first_name} - gemovi`}
-                            value={set.player_two_games || 0}
-                            onChange={(e) =>
-                              handleSetScoreChange(
-                                index,
-                                "two",
-                                Number(e.target.value) || 0
-                              )
-                            }
-                          >
-                            {[...Array(8).keys()].map((gameCount) => (
-                              <MenuItem key={gameCount} value={gameCount}>
-                                {gameCount}
-                              </MenuItem>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">{playerTwo?.first_name}</p>
+                        <Select
+                          value={String(set.player_two_games || 0)}
+                          onValueChange={(v) => handleSetScoreChange(index, "two", Number(v))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {gameOptions.map((n) => (
+                              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                             ))}
-                          </Select>
-                        </FormControl>
-                      )}
-                    </Grid>
-                  </Box>
-                </Box>
-              );
-            })
-          : null}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-        <Box mt={2}>
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
-          >
-            Predaja meča
-          </Typography>
-          <RadioGroup
-            row
-            value={isSurrender ? "yes" : "no"}
-            onChange={(e) => setIsSurrender(e.target.value === "yes")}
-          >
-            <FormControlLabel value="no" control={<Radio />} label="Ne" />
-            <FormControlLabel value="yes" control={<Radio />} label="Da" />
-          </RadioGroup>
+        <Separator />
+
+        {/* Surrender */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold">Predaja meča</h3>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={!isSurrender ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsSurrender(false)}
+            >
+              Ne
+            </Button>
+            <Button
+              type="button"
+              variant={isSurrender ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsSurrender(true)}
+            >
+              Da
+            </Button>
+          </div>
           {isSurrender && localMatch && (
-            <FormControl sx={{ mt: 1 }} fullWidth>
-              <InputLabel>Pobjednik</InputLabel>
+            <div className="space-y-2">
+              <Label>Pobjednik</Label>
               <Select
-                label="Pobjednik"
                 value={manualWinner || ""}
-                onChange={(e) =>
-                  setManualWinner((e.target.value as string) || null)
-                }
+                onValueChange={(v) => setManualWinner(v || null)}
               >
-                <MenuItem value={localMatch.player_one_id}>
-                  {playerOne?.first_name} {playerOne?.last_name}
-                </MenuItem>
-                <MenuItem value={localMatch.player_two_id}>
-                  {playerTwo?.first_name} {playerTwo?.last_name}
-                </MenuItem>
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberi pobjednika..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={localMatch.player_one_id}>
+                    {playerOne?.first_name} {playerOne?.last_name}
+                  </SelectItem>
+                  <SelectItem value={localMatch.player_two_id}>
+                    {playerTwo?.first_name} {playerTwo?.last_name}
+                  </SelectItem>
+                </SelectContent>
               </Select>
-            </FormControl>
+            </div>
           )}
-        </Box>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="gap-2">
+            <X className="w-4 h-4" />
+            Odustani
+          </Button>
+          <Button onClick={handleSave} className="gap-2">
+            <Save className="w-4 h-4" />
+            Spremi rezultate
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions
-        sx={{
-          p: { xs: 2, sm: 2 },
-          flexDirection: { xs: "column", sm: "row" },
-          gap: { xs: 1, sm: 0 },
-        }}
-      >
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          fullWidth={isMobile}
-          sx={{ order: { xs: 2, sm: 1 } }}
-        >
-          Odustani
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<SaveIcon />}
-          onClick={handleSave}
-          fullWidth={isMobile}
-          sx={{ order: { xs: 1, sm: 2 } }}
-        >
-          Spremi rezultate
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }

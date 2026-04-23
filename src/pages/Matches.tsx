@@ -1,34 +1,29 @@
+import { Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  Save as SaveIcon,
-  Schedule,
-} from "@mui/icons-material";
-import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Chip,
-  Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Paper,
-  Snackbar,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
+  TableHeader,
   TableRow,
-  Typography,
-} from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import { useAuth } from "../providers/AuthProvider";
@@ -40,6 +35,25 @@ import { generateSchedule } from "../utils/generateSchedule";
 import { EditMatchModal } from "../components/EditMatchModal";
 import { orderBy } from "lodash-es";
 
+const MONTHS = [
+  { value: "1", label: "Siječanj" }, { value: "2", label: "Veljača" },
+  { value: "3", label: "Ožujak" }, { value: "4", label: "Travanj" },
+  { value: "5", label: "Svibanj" }, { value: "6", label: "Lipanj" },
+  { value: "7", label: "Srpanj" }, { value: "8", label: "Kolovoz" },
+  { value: "9", label: "Rujan" }, { value: "10", label: "Listopad" },
+  { value: "11", label: "Studeni" }, { value: "12", label: "Prosinac" },
+];
+
+const AVATAR_COLORS = [
+  "bg-blue-600", "bg-violet-600",
+  "bg-emerald-600", "bg-amber-600",
+  "bg-rose-600",
+];
+
+function avatarColor(first: string, last: string) {
+  return AVATAR_COLORS[(first.charCodeAt(0) + last.charCodeAt(0)) % AVATAR_COLORS.length];
+}
+
 type JoinedMatch = TMatch & {
   player_one: TUser;
   player_two: TUser;
@@ -50,539 +64,315 @@ export default function Matches() {
   const [selectedMatch, setSelectedMatch] = useState<JoinedMatch | null>(null);
   const [matches, setMatches] = useState<JoinedMatch[]>([]);
   const { users: players } = useUsers();
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error",
-  });
   const [modalOpen, setModalOpen] = useState(false);
-  // Modal styling no longer needs theme hook here
   const { user } = useAuth();
   const player = players.find((p) => p.user_id === user?.id);
   const isAdmin = !!player?.is_admin;
   const [showOnlyMine, setShowOnlyMine] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(dayjs());
+  const now = dayjs();
+  const [selectedMonth, setSelectedMonth] = useState(String(now.month() + 1));
+  const [selectedYear, setSelectedYear] = useState(String(now.year()));
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [deleteSingleDialogOpen, setDeleteSingleDialogOpen] = useState(false);
   const [matchToDelete, setMatchToDelete] = useState<JoinedMatch | null>(null);
   const { setLoading } = useLoader();
 
+  const selectedDayjs: Dayjs = dayjs(`${selectedYear}-${selectedMonth.padStart(2, "0")}-01`);
+
   useEffect(() => {
-    if (player && player.is_viewer) {
-      setShowOnlyMine(false);
-    }
+    if (player?.is_viewer) setShowOnlyMine(false);
   }, [user?.id, players]);
 
   const initialize = async () => {
     setLoading(true);
-    // Load matches with joined users and group
     const { data: matchesData } = await supabase
       .from("match")
-      .select(
-        `
-        *,
-        player_one:player_one_id (*),
-        player_two:player_two_id (*),
-        group:group_id (*)
-      `
-      )
+      .select(`*, player_one:player_one_id (*), player_two:player_two_id (*), group:group_id (*)`)
       .eq("is_deleted", false);
 
     if (matchesData) {
       const items = orderBy(matchesData, "group.name") as JoinedMatch[];
-      let filteredMatches = showOnlyMine
-        ? items.filter((t) =>
-            [t.player_one_id, t.player_two_id].includes(user?.id as string)
-          )
+      let filtered = showOnlyMine
+        ? items.filter((t) => [t.player_one_id, t.player_two_id].includes(user?.id as string))
         : items;
 
-      // Filter by selected month if a month is selected
-      if (selectedMonth) {
-        const startOfMonth = selectedMonth.startOf("month");
-        const endOfMonth = selectedMonth.endOf("month");
-
-        filteredMatches = filteredMatches.filter((match) => {
-          // Filter by match creation date or any date field in the match
-          const matchDate = match.created_at
-            ? dayjs(match.created_at?.toDate?.() || match.created_at)
-            : dayjs();
-          return (
-            matchDate.isAfter(startOfMonth) && matchDate.isBefore(endOfMonth)
-          );
-        });
-      }
-
-      setMatches(filteredMatches);
+      const startOfMonth = selectedDayjs.startOf("month");
+      const endOfMonth = selectedDayjs.endOf("month");
+      filtered = filtered.filter((match) => {
+        if (!match.created_at) return false;
+        const d = dayjs(match.created_at);
+        return d.isAfter(startOfMonth.subtract(1, "ms")) && d.isBefore(endOfMonth.add(1, "ms"));
+      });
+      setMatches(filtered);
     } else {
       setMatches([]);
     }
-
     setLoading(false);
   };
 
-  useEffect(() => {
-    initialize();
-  }, [showOnlyMine, selectedMonth]);
-
-  const getPlayer = (id: string) => players.find((p) => p.user_id === id);
-
-  const handleMatchSelect = (match: JoinedMatch) => {
-    setSelectedMatch({ ...match });
-    setModalOpen(true);
-  };
+  useEffect(() => { initialize(); }, [showOnlyMine, selectedMonth, selectedYear]);
 
   const calculateSetResult = (match: TMatch) => {
-    const hasResults = match.sets.some(
-      (set) => set.player_one_games > 0 || set.player_two_games > 0
-    );
+    const hasResults = match.sets.some((s) => s.player_one_games > 0 || s.player_two_games > 0);
     if (!hasResults) return "-";
-
-    let playerOneSets = 0;
-    let playerTwoSets = 0;
-
-    match.sets.forEach((set) => {
-      if (set.player_one_games > set.player_two_games) {
-        playerOneSets++;
-      } else if (set.player_two_games > set.player_one_games) {
-        playerTwoSets++;
-      }
+    let p1 = 0, p2 = 0;
+    match.sets.forEach((s) => {
+      if (s.player_one_games > s.player_two_games) p1++;
+      else if (s.player_two_games > s.player_one_games) p2++;
     });
-
-    return `${playerOneSets} - ${playerTwoSets}`;
+    return `${p1} - ${p2}`;
   };
 
   const determineWinner = (match: TMatch): string => {
-    let playerOneSets = 0;
-    let playerTwoSets = 0;
-
-    match.sets.forEach((set) => {
-      if (set.player_one_games > set.player_two_games) {
-        playerOneSets++;
-      } else if (set.player_two_games > set.player_one_games) {
-        playerTwoSets++;
-      }
+    let p1 = 0, p2 = 0;
+    match.sets.forEach((s) => {
+      if (s.player_one_games > s.player_two_games) p1++;
+      else if (s.player_two_games > s.player_one_games) p2++;
     });
-
-    if (playerOneSets > playerTwoSets) {
-      return match.player_one_id;
-    } else if (playerTwoSets > playerOneSets) {
-      return match.player_two_id;
-    } else {
-      return "";
-    }
-  };
-
-  const handleModalClose = () => {
-    setModalOpen(false);
-    setSelectedMatch(null);
+    if (p1 > p2) return match.player_one_id;
+    if (p2 > p1) return match.player_two_id;
+    return "";
   };
 
   const getMatchWinnerDisplay = (match: JoinedMatch) => {
-    const winnerId = determineWinner(match);
+    // Prefer the explicitly stored winner_id (set for surrendered + completed matches)
+    const winnerId = match.winner_id || determineWinner(match);
     if (!winnerId) return "-";
-
-    const winner = getPlayer(winnerId);
-    return winner ? `${winner.first_name} ${winner.last_name}` : "-";
+    const w = players.find((p) => p.user_id === winnerId);
+    return w ? `${w.first_name} ${w.last_name}` : "-";
   };
 
-  // Check if selected month is the current month (only enable for current month)
-  const isCurrentMonth = selectedMonth
-    ? selectedMonth.isSame(dayjs(), "month")
-    : false;
+  const isCurrentMonth = selectedDayjs.isSame(dayjs(), "month");
 
-  // Delete all matches in current month
   const handleDeleteAllMatches = async () => {
-    if (!selectedMonth) return;
-
-    const startOfMonth = selectedMonth.startOf("month");
-    const endOfMonth = selectedMonth.endOf("month");
-
-    // Get all matches in the selected month
-    const { data: matchesToDelete } = await supabase
-      .from("match")
-      .select("id")
+    const startOfMonth = selectedDayjs.startOf("month");
+    const endOfMonth = selectedDayjs.endOf("month");
+    const { data: toDelete } = await supabase.from("match").select("id")
       .gte("created_at", startOfMonth.toISOString())
       .lte("created_at", endOfMonth.toISOString());
-
-    if (matchesToDelete && matchesToDelete.length > 0) {
-      const matchIds = matchesToDelete.map((match) => match.id);
-      await supabase
-        .from("match")
-        .update({ is_deleted: true })
-        .in("id", matchIds);
-
-      setSnackbar({
-        open: true,
-        message: `Obrisano ${matchIds.length} mečeva iz ${selectedMonth.format(
-          "MM/YYYY"
-        )}.`,
-        severity: "success",
-      });
+    if (toDelete && toDelete.length > 0) {
+      await supabase.from("match").update({ is_deleted: true }).in("id", toDelete.map((m) => m.id));
+      toast.success(`Obrisano ${toDelete.length} mečeva.`);
     }
-
     setDeleteAllDialogOpen(false);
     await initialize();
   };
 
-  // Delete single match
   const handleDeleteSingleMatch = async () => {
     if (!matchToDelete?.id) return;
-
-    await supabase
-      .from("match")
-      .update({ is_deleted: true })
-      .eq("id", matchToDelete.id);
-
+    await supabase.from("match").update({ is_deleted: true }).eq("id", matchToDelete.id);
     await initialize();
-    setSnackbar({
-      open: true,
-      message: "Meč je obrisan.",
-      severity: "success",
-    });
-
+    toast.success("Meč je obrisan.");
     setDeleteSingleDialogOpen(false);
     setMatchToDelete(null);
   };
 
-  // Open delete single match dialog
-  const handleDeleteMatchClick = (match: JoinedMatch) => {
-    setMatchToDelete(match);
-    setDeleteSingleDialogOpen(true);
-  };
-
-  // Derived details now handled inside EditMatchModal
+  const years = ["2024", "2025", "2026"];
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <div className="flex items-center gap-3 mb-6">
-        <Schedule
-          sx={{
-            color: "primary.main",
-          }}
-        />
-        <Typography variant="h4" className="font-semibold text-gray-800">
-          Raspored
-        </Typography>
+    <div className="container max-w-6xl mx-auto py-8 px-4">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Raspored</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Mečevi i rezultati</p>
       </div>
-      <Box sx={{ mb: 2 }}>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DatePicker
-            value={selectedMonth}
-            onChange={(newValue) => setSelectedMonth(newValue)}
-            label="Odaberi mjesec"
-            views={["month", "year"]}
-            format="MM/YYYY"
-          />
-        </LocalizationProvider>
-      </Box>
-      <Button
-        sx={{
-          mb: 2,
-        }}
-        variant="contained"
-        onClick={() => setShowOnlyMine((oldState) => !oldState)}
-      >
-        {showOnlyMine ? "Prikaži sve mečeve" : "Prikaži samo moje mečeve"}
-      </Button>
-      {isAdmin && (
-        <>
+
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <Select value={selectedMonth} onValueChange={(v) => setSelectedMonth(v ?? selectedMonth)}>
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {MONTHS.map((m) => (
+              <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedYear} onValueChange={(v) => setSelectedYear(v ?? selectedYear)}>
+          <SelectTrigger className="w-24">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Button variant="outline" onClick={() => setShowOnlyMine((s) => !s)}>
+          {showOnlyMine ? "Prikaži sve mečeve" : "Prikaži samo moje mečeve"}
+        </Button>
+
+        {isAdmin && (
           <Button
-            sx={{ mb: 2, ml: 2 }}
-            variant="outlined"
-            startIcon={<SaveIcon />}
+            variant="outline"
             disabled={!isCurrentMonth}
+            className="gap-2 ml-auto"
             onClick={async () => {
-              const matches = await generateSchedule();
-              if (matches.length) {
-                await supabase.from("match").insert(matches);
+              const m = await generateSchedule();
+              if (m.length) {
+                await supabase.from("match").insert(m);
                 await initialize();
-                setSnackbar({
-                  open: true,
-                  message: "Raspored generiran.",
-                  severity: "success",
-                });
+                toast.success("Raspored generiran.");
               }
             }}
           >
+            <RefreshCw className="w-4 h-4" />
             Generiraj raspored
           </Button>
-        </>
-      )}
-      <TableContainer component={Paper} variant="outlined">
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <strong>Meč #</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Igrač 1</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Igrač 2</strong>
-              </TableCell>
-              <TableCell align="center">
-                <strong>Rezultat</strong>
-              </TableCell>
-              <TableCell align="center">
-                <strong>Pobjednik</strong>
-              </TableCell>
-              <TableCell align="center">
-                <strong>Status</strong>
-              </TableCell>
-              <TableCell align="center">
-                <strong>Akcije</strong>
-              </TableCell>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-10">#</TableHead>
+              <TableHead>Igrač 1</TableHead>
+              <TableHead>Igrač 2</TableHead>
+              <TableHead className="text-center">Rezultat</TableHead>
+              <TableHead className="text-center">Pobjednik</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-center">Akcije</TableHead>
             </TableRow>
-          </TableHead>
+          </TableHeader>
           <TableBody>
             {matches.map((match, index) => {
               const p1 = match.player_one;
               const p2 = match.player_two;
-              const p1Group = match.group;
-              const p2Group = match.group;
-              const isCompleted =
-                match.status === "played" || match.status === "surrendered";
+              const g = match.group;
+              const isCompleted = match.status === "played" || match.status === "surrendered";
 
               return (
-                <TableRow
-                  key={match.id}
-                  hover
-                  sx={{
-                    "&:hover": {
-                      backgroundColor: "action.hover",
-                      cursor: "pointer",
-                    },
-                  }}
-                >
+                <TableRow key={match.id} className="hover:bg-muted/30">
+                  <TableCell className="text-sm text-muted-foreground">{index + 1}</TableCell>
                   <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {index + 1}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar
-                        sx={{
-                          bgcolor: p1Group?.color + ".main",
-                          width: 32,
-                          height: 32,
-                          fontSize: "0.875rem",
-                        }}
-                      >
-                        {p1?.avatar}
-                      </Avatar>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          gap: 2,
-                          width: "60%",
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight="medium">
-                          {p1?.first_name} {p1?.last_name}
-                        </Typography>
-                        <Chip
-                          label={p1Group?.name}
-                          variant="filled"
-                          sx={{
-                            backgroundColor: p1Group?.color,
-                            color: "white",
-                          }}
-                          className="font-medium"
-                        />
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar
-                        sx={{
-                          bgcolor: p2Group?.color + ".main",
-                          width: 32,
-                          height: 32,
-                          fontSize: "0.875rem",
-                        }}
-                      >
-                        {p2?.avatar}
-                      </Avatar>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 2,
-                          width: "60%",
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight="medium">
-                          {p2?.first_name} {p2?.last_name}
-                        </Typography>
-                        <Chip
-                          label={p2Group?.name}
-                          variant="filled"
-                          sx={{
-                            backgroundColor: p2Group?.color,
-                            color: "white",
-                          }}
-                          className="font-medium"
-                        />
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="h6">
-                      {calculateSetResult(match)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="body2">
-                      {getMatchWinnerDisplay(match)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    {match.status === "surrendered" ? (
-                      <Chip label="Predaja" size="small" color="warning" />
-                    ) : isCompleted ? (
-                      <Chip label="Završen" size="small" color="success" />
-                    ) : (
-                      <Chip label="Čeka" size="small" color="default" />
-                    )}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box display="flex" gap={1} justifyContent="center">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<EditIcon />}
-                        onClick={() => handleMatchSelect(match)}
-                      >
-                        Uredi
-                      </Button>
-                      {isAdmin && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          color="error"
-                          startIcon={<DeleteIcon />}
-                          onClick={() => handleDeleteMatchClick(match)}
-                        >
-                          Obriši
-                        </Button>
+                    <div className="flex items-center gap-2">
+                      {p1 && (
+                        <>
+                          <div className={`w-7 h-7 rounded-full ${avatarColor(p1.first_name, p1.last_name)} flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0`}>
+                            {p1.first_name[0]}{p1.last_name[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium leading-tight">{p1.first_name} {p1.last_name}</p>
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: g?.color }}>
+                              {g?.name}
+                            </span>
+                          </div>
+                        </>
                       )}
-                    </Box>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {p2 && (
+                        <>
+                          <div className={`w-7 h-7 rounded-full ${avatarColor(p2.first_name, p2.last_name)} flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0`}>
+                            {p2.first_name[0]}{p2.last_name[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium leading-tight">{p2.first_name} {p2.last_name}</p>
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: g?.color }}>
+                              {g?.name}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center font-mono font-bold text-sm">{calculateSetResult(match)}</TableCell>
+                  <TableCell className="text-center text-sm">{getMatchWinnerDisplay(match)}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge
+                      variant="secondary"
+                      className={
+                        match.status === "surrendered" ? "bg-amber-100 text-amber-700" :
+                        isCompleted ? "bg-emerald-100 text-emerald-700" :
+                        "bg-muted text-muted-foreground"
+                      }
+                    >
+                      {match.status === "surrendered" ? "Predaja" : isCompleted ? "Završen" : "Čeka"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => { setSelectedMatch({ ...match }); setModalOpen(true); }}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="Uredi"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => { setMatchToDelete(match); setDeleteSingleDialogOpen(true); }}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Obriši"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
-      </TableContainer>
+        {matches.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            Nema mečeva za odabrani period
+          </div>
+        )}
+      </div>
 
       <EditMatchModal
         open={modalOpen}
         match={selectedMatch}
-        onClose={handleModalClose}
+        onClose={() => { setModalOpen(false); setSelectedMatch(null); }}
         onSave={async (updated, winnerId, status, isSurrender) => {
           if (!updated?.id) return;
-          await supabase
-            .from("match")
-            .update({
-              sets: updated.sets,
-              winner_id: winnerId,
-              status,
-              is_surrender: isSurrender,
-            })
-            .eq("id", updated.id);
+          await supabase.from("match").update({ sets: updated.sets, winner_id: winnerId, status, is_surrender: isSurrender }).eq("id", updated.id);
           await initialize();
-          setSnackbar({
-            open: true,
-            message: "Rezultati meča su spremljeni.",
-            severity: "success",
-          });
+          toast.success("Rezultati meča su spremljeni.");
           setModalOpen(false);
           setSelectedMatch(null);
         }}
       />
 
-      {snackbar.open && (
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert
-            severity={snackbar.severity}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      )}
-
-      {/* Delete All Matches Confirmation Dialog */}
-      <Dialog
-        open={deleteAllDialogOpen}
-        onClose={() => setDeleteAllDialogOpen(false)}
-        aria-labelledby="delete-all-dialog-title"
-      >
-        <DialogTitle id="delete-all-dialog-title">
-          Potvrdi brisanje svih mečeva
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Jeste li sigurni da želite obrisati sve mečeve iz{" "}
-            {selectedMonth?.format("MM/YYYY")}? Ova akcija se ne može poništiti.
-          </DialogContentText>
+      {/* Delete All Dialog */}
+      <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Potvrdi brisanje svih mečeva</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Jeste li sigurni da želite obrisati sve mečeve iz {selectedDayjs.format("MM/YYYY")}? Ova akcija se ne može poništiti.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteAllDialogOpen(false)}>Odustani</Button>
+            <Button variant="destructive" onClick={handleDeleteAllMatches}>Obriši sve</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteAllDialogOpen(false)}>
-            Odustani
-          </Button>
-          <Button
-            onClick={handleDeleteAllMatches}
-            color="error"
-            variant="contained"
-          >
-            Obriši sve
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      {/* Delete Single Match Confirmation Dialog */}
-      <Dialog
-        open={deleteSingleDialogOpen}
-        onClose={() => setDeleteSingleDialogOpen(false)}
-        aria-labelledby="delete-single-dialog-title"
-      >
-        <DialogTitle id="delete-single-dialog-title">
-          Potvrdi brisanje meča
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Jeste li sigurni da želite obrisati ovaj meč između{" "}
-            {matchToDelete?.player_one?.first_name}{" "}
-            {matchToDelete?.player_one?.last_name} i{" "}
-            {matchToDelete?.player_two?.first_name}{" "}
-            {matchToDelete?.player_two?.last_name}? Ova akcija se ne može
-            poništiti.
-          </DialogContentText>
+      {/* Delete Single Dialog */}
+      <Dialog open={deleteSingleDialogOpen} onOpenChange={setDeleteSingleDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Potvrdi brisanje meča</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Jeste li sigurni da želite obrisati meč između{" "}
+            {matchToDelete?.player_one?.first_name} {matchToDelete?.player_one?.last_name} i{" "}
+            {matchToDelete?.player_two?.first_name} {matchToDelete?.player_two?.last_name}?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteSingleDialogOpen(false)}>Odustani</Button>
+            <Button variant="destructive" onClick={handleDeleteSingleMatch}>Obriši</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteSingleDialogOpen(false)}>
-            Odustani
-          </Button>
-          <Button
-            onClick={handleDeleteSingleMatch}
-            color="error"
-            variant="contained"
-          >
-            Obriši
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Container>
+    </div>
   );
 }

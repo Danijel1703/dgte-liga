@@ -1,97 +1,41 @@
-import { Cancel, Person, Phone, Save } from "@mui/icons-material";
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Container,
-  InputAdornment,
-  TextField,
-} from "@mui/material";
+import { Phone, Save, X, Shield, CheckCircle2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { useUsers } from "../providers/UsersProvider";
 import type { TUser } from "../types";
 import { supabase } from "../utils/supabase";
+import { normalizeCroatianChars } from "../utils/strings";
+import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { toast } from "sonner";
 
-export function normalizeCroatianChars(text: string): string {
-  if (!text) {
-    return "";
-  }
-
-  // Step 1: Handle Digraphs (DŽ, LJ, NJ) first.
-  let normalizedText = text;
-
-  normalizedText = normalizedText
-    .replace(/DŽ/g, "DZ")
-    .replace(/Dž/g, "Dz")
-    .replace(/dž/g, "dz")
-    .replace(/LJ/g, "LJ")
-    .replace(/Lj/g, "Lj")
-    .replace(/lj/g, "lj")
-    .replace(/NJ/g, "NJ")
-    .replace(/Nj/g, "Nj")
-    .replace(/nj/g, "nj");
-
-  // Step 2: Handle single-character diacritics (Č, Ć, Š, Ž, Đ)
-  const singleCharMap: { [key: string]: string } = {
-    Č: "C",
-    č: "c",
-    Ć: "C",
-    ć: "c",
-    Š: "S",
-    š: "s",
-    Ž: "Z",
-    ž: "z",
-    Đ: "D",
-    đ: "d",
-  };
-
-  const charRegex = /[ČčĆćŠšŽžĐđ]/g;
-  normalizedText = normalizedText.replace(charRegex, (match: string) => {
-    return singleCharMap[match];
-  });
-
-  return normalizedText;
-}
+export { normalizeCroatianChars };
 
 export default function ProfilePage() {
   const { users, refresh } = useUsers();
   const { user: authUser } = useAuth();
   const [profile, setProfile] = useState<TUser | null>(null);
   const [editedProfile, setEditedProfile] = useState<Partial<TUser>>({});
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleInputChange =
     (field: keyof TUser) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setEditedProfile((prev) => ({
-        ...prev,
-        [field]: e.target.value,
-      }));
+      setEditedProfile((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
   const handleSaveProfile = async () => {
     if (!profile || !authUser) return;
-
-    setError("");
-    setSuccess("");
-
     try {
       setLoading(true);
-
       const newPassword =
         (editedProfile.first_name || profile.first_name).toLowerCase() +
         (editedProfile.last_name || profile.last_name).toLowerCase() +
         "123";
-
-      await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
+      await supabase.auth.updateUser({ password: newPassword });
       await supabase
         .from("user")
         .update({
@@ -100,11 +44,9 @@ export default function ProfilePage() {
           phone: editedProfile.phone,
         })
         .eq("user_id", profile.user_id);
-
-      setSuccess("Profil je uspešno ažuriran!");
-    } catch (error) {
-      console.log(error);
-      setError("Greška pri ažuriranju profila. Pokušajte ponovo.");
+      toast.success("Profil je uspješno ažuriran!");
+    } catch {
+      toast.error("Greška pri ažuriranju profila. Pokušajte ponovo.");
     } finally {
       await refresh();
       setLoading(false);
@@ -119,13 +61,11 @@ export default function ProfilePage() {
         phone: profile.phone,
       });
     }
-    setError("");
   };
 
   useEffect(() => {
     if (authUser && users.length > 0) {
       const userProfile = users.find((u) => u.user_id === authUser.id);
-
       if (userProfile) {
         setProfile(userProfile);
         setEditedProfile({
@@ -137,92 +77,123 @@ export default function ProfilePage() {
     }
   }, [users, authUser]);
 
-  if (!profile) return;
+  if (!profile) return null;
 
   return (
-    <Container component="main" maxWidth="md">
-      <Box className="min-h-screen py-8">
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {success}
-          </Alert>
-        )}
-        {/* Profile Information Card */}
-        <Card className="mb-6">
-          <CardContent className="p-8">
-            <Box className="flex flex-col md:flex-row gap-6">
-              {/* Profile Form */}
-              <Box className="flex-1">
-                <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="Ime"
+    <div className="min-h-screen w-full bg-background">
+      <div className="max-w-lg mx-auto px-4 py-8">
+
+        {/* Identity header — no dark banner, just the data */}
+        <div className="flex items-center gap-4 mb-8 pb-6 border-b border-border">
+          <PlayerAvatar
+            firstName={profile.first_name}
+            lastName={profile.last_name}
+            size="lg"
+          />
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight truncate">
+              {profile.first_name} {profile.last_name}
+            </h1>
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              {profile.is_admin && (
+                <span
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md"
+                  style={{
+                    background: "oklch(0.448 0.119 150 / 0.12)",
+                    color: "oklch(0.35 0.10 150)",
+                  }}
+                >
+                  <Shield className="w-3 h-3" />
+                  Admin
+                </span>
+              )}
+              <span
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md"
+                style={{
+                  background: profile.paid
+                    ? "oklch(0.44 0.12 155 / 0.12)"
+                    : "oklch(0.55 0.20 27 / 0.12)",
+                  color: profile.paid
+                    ? "oklch(0.35 0.10 155)"
+                    : "oklch(0.45 0.18 27)",
+                }}
+              >
+                {profile.paid ? (
+                  <CheckCircle2 className="w-3 h-3" />
+                ) : (
+                  <AlertCircle className="w-3 h-3" />
+                )}
+                {profile.paid ? "Članarina plaćena" : "Članarina nije plaćena"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Edit form */}
+        <Card className="shadow-sm border-border/60 py-0">
+          <CardContent className="p-6">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-5">
+              Uredi profil
+            </h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="first-name">Ime</Label>
+                  <Input
+                    id="first-name"
                     value={editedProfile.first_name || ""}
                     onChange={handleInputChange("first_name")}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Person color="action" />
-                        </InputAdornment>
-                      ),
-                    }}
+                    placeholder="Ime"
                   />
-                  <TextField
-                    fullWidth
-                    label="Prezime"
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last-name">Prezime</Label>
+                  <Input
+                    id="last-name"
                     value={editedProfile.last_name || ""}
                     onChange={handleInputChange("last_name")}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Person color="action" />
-                        </InputAdornment>
-                      ),
-                    }}
+                    placeholder="Prezime"
                   />
-                </Box>
-                <TextField
-                  fullWidth
-                  label="Broj telefona"
-                  value={editedProfile.phone || ""}
-                  onChange={handleInputChange("phone")}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Phone color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                </div>
+              </div>
 
-                <Box className="flex gap-2 mt-4">
-                  <Button
-                    variant="contained"
-                    startIcon={<Save />}
-                    onClick={handleSaveProfile}
-                    disabled={loading}
-                  >
-                    {loading ? "Čuvanje..." : "Sačuvaj"}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Cancel />}
-                    onClick={handleCancel}
-                    disabled={loading}
-                  >
-                    Otkaži
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Broj telefona</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    className="pl-9"
+                    value={editedProfile.phone || ""}
+                    onChange={handleInputChange("phone")}
+                    placeholder="npr. +385..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Otkaži
+                </Button>
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  {loading ? "Čuvanje..." : "Sačuvaj promjene"}
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      </Box>
-    </Container>
+      </div>
+    </div>
   );
 }

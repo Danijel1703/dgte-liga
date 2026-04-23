@@ -1,14 +1,15 @@
+import { useState } from "react";
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  Alert,
-} from "@mui/material";
-import { useState } from "react";
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
 import { useAnnouncements } from "../hooks/useAnnouncements";
 
 interface AddAnnouncementModalProps {
@@ -32,7 +33,6 @@ export default function AddAnnouncementModal({
       setError("Tekst obavjesti je obavezan");
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
@@ -41,9 +41,7 @@ export default function AddAnnouncementModal({
       onSuccess?.();
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Greška pri dodavanju obavjesti"
-      );
+      setError(err instanceof Error ? err.message : "Greška pri dodavanju obavjesti");
     } finally {
       setLoading(false);
     }
@@ -56,40 +54,44 @@ export default function AddAnnouncementModal({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Dodaj Obavjest</DialogTitle>
-      <DialogContent>
-        <Box sx={{ mt: 2 }}>
+    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Dodaj Obavjest</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="Tekst obavjesti"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Unesite tekst obavjesti..."
-            variant="outlined"
-            disabled={loading}
-          />
-        </Box>
+          <div className="space-y-2">
+            <Label htmlFor="announcement-text">Tekst obavjesti</Label>
+            <Textarea
+              id="announcement-text"
+              rows={4}
+              placeholder="Unesite tekst obavjesti..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={handleClose} disabled={loading}>
+            Otkaži
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || !text.trim()}
+            className=""
+          >
+            {loading ? "Dodavanje..." : "Dodaj"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={loading}>
-          Otkaži
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={loading || !text.trim()}
-        >
-          {loading ? "Dodavanje..." : "Dodaj"}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }

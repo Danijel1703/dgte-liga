@@ -1,12 +1,5 @@
-import { Delete as DeleteIcon } from "@mui/icons-material";
-import {
-  Box,
-  CircularProgress,
-  Divider,
-  IconButton,
-  Paper,
-  Typography,
-} from "@mui/material";
+import { Trash2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { hr } from "date-fns/locale";
 import type { TAnnouncement } from "../types.d";
@@ -17,6 +10,22 @@ interface AnnouncementListProps {
   deleteAnnouncement: (id: string) => Promise<void>;
   isAdmin?: boolean;
 }
+
+function Spinner() {
+  return (
+    <div className="flex justify-center py-8">
+      <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+const formatDate = (dateString: string) => {
+  try {
+    return format(new Date(dateString), "dd.MM.yyyy HH:mm", { locale: hr });
+  } catch {
+    return dateString;
+  }
+};
 
 export default function AnnouncementList({
   announcements,
@@ -34,94 +43,47 @@ export default function AnnouncementList({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd.MM.yyyy HH:mm", { locale: hr });
-    } catch {
-      return dateString;
-    }
-  };
-
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading) return <Spinner />;
 
   if (announcements.length === 0) {
     return (
-      <Paper sx={{ p: 3, m: 2, textAlign: "center" }}>
-        <Typography variant="body1" color="text.secondary">
+      <Card>
+        <CardContent className="py-10 text-center text-muted-foreground">
           Nema obavjesti za prikaz
-        </Typography>
-      </Paper>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
-        Obavjesti
-      </Typography>
-      {announcements.map((announcement: TAnnouncement, index: number) => (
-        <Paper
+    <div className="space-y-3">
+      <h2 className="text-lg font-semibold">Obavjesti</h2>
+      {announcements.map((announcement: TAnnouncement) => (
+        <Card
           key={announcement.id}
-          elevation={2}
-          sx={{
-            p: 3,
-            mb: 2,
-            position: "relative",
-            backgroundColor: "background.paper",
-          }}
+          className="relative border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow"
         >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}
-          >
-            <Box sx={{ flex: 1, pr: isAdmin ? 4 : 0 }}>
-              <Typography
-                variant="body1"
-                sx={{
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  lineHeight: 1.6,
-                }}
-              >
-                {announcement.text}
-              </Typography>
-              {announcement.created_at && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 1 }}
-                >
-                  {formatDate(announcement.created_at)}
-                </Typography>
-              )}
-            </Box>
-            {isAdmin && (
-              <IconButton
-                onClick={() => handleDelete(announcement.id!)}
-                color="error"
-                size="small"
-                sx={{
-                  position: "absolute",
-                  top: 8,
-                  right: 8,
-                }}
-              >
-                <DeleteIcon />
-              </IconButton>
+          <CardContent className="py-4 px-5 pr-12">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground">
+              {announcement.text}
+            </p>
+            {announcement.created_at && (
+              <p className="text-xs text-muted-foreground mt-2">
+                {formatDate(announcement.created_at)}
+              </p>
             )}
-          </Box>
-          {index < announcements.length - 1 && <Divider sx={{ mt: 2 }} />}
-        </Paper>
+          </CardContent>
+          {isAdmin && (
+            <button
+              onClick={() => handleDelete(announcement.id!)}
+              className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              title="Obriši"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </Card>
       ))}
-    </Box>
+    </div>
   );
 }

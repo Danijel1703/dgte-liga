@@ -1,20 +1,3 @@
-import type { Timestamp } from "firebase/firestore";
-
-export interface EditGroupModalProps {
-  open: boolean;
-  onClose: () => void;
-  name: string;
-  currentMembers: TGroupMember[];
-  availableMembers: TUser[];
-  onSave: (groupName: string, members: TGroupMember[]) => Promise<void>;
-}
-
-export interface CreateGroupModalProps {
-  open: boolean;
-  onClose: () => void;
-  availableMembers: TUser[];
-  onSave: (groupName: string, members: TGroupMember[]) => Promise<void>;
-}
 
 /**
  * Defines the core structure for a User profile.
@@ -56,7 +39,7 @@ export type TGroup = {
   name: string;
   member_ids: string[];
   members: Array<TGroupMember>;
-  created_at: Timestamp;
+  created_at: string;
   color: string;
   is_deleted: boolean;
   match: Array<TMatch>;
@@ -84,7 +67,7 @@ export type TMatch = {
   group_id: string;
   is_surrender: boolean;
   is_deleted: boolean;
-  created_at?: Timestamp;
+  created_at?: string;
   group?: {
     group_member: Array<{ is_deleted: boolean; user_id: string }>;
   };

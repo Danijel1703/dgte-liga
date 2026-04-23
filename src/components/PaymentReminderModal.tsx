@@ -1,11 +1,11 @@
 import {
-  Button,
   Dialog,
-  DialogActions,
   DialogContent,
-  DialogContentText,
+  DialogHeader,
   DialogTitle,
-} from "@mui/material";
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface PaymentReminderModalProps {
   open: boolean;
@@ -17,25 +17,18 @@ export default function PaymentReminderModal({
   onClose,
 }: PaymentReminderModalProps) {
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogTitle id="alert-dialog-title">
-        {"Obavijest o članarini"}
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-description">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Obavijest o članarini</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
           Niste platili članarinu za ovaj mjesec.
-        </DialogContentText>
+        </p>
+        <DialogFooter>
+          <Button onClick={onClose}>U redu</Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} autoFocus>
-          U redu
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }

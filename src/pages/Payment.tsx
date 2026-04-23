@@ -1,211 +1,187 @@
-import {
-  EuroSymbol as Euro,
-  AccountBalance as Bank,
-  Schedule as Clock,
-  EmojiEvents as Trophy,
-} from "@mui/icons-material";
-import {
-  Box,
-  Card,
-  CardContent,
-  Container,
-  Paper,
-  Typography,
-  Divider,
-  Alert,
-} from "@mui/material";
+import { CheckCircle2, Copy, AlertCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "../providers/AuthProvider";
+import { useUsers } from "../providers/UsersProvider";
 
-export default function Payment() {
+const IBAN = "HR3923400091111199032";
+
+
+function IbanButton() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(IBAN);
+    setCopied(true);
+    toast.success("IBAN kopiran!");
+    setTimeout(() => setCopied(false), 2500);
+  };
+
   return (
-    <Box
-      sx={{ minHeight: "100vh", bgcolor: "background.default", width: "100%" }}
+    <button
+      onClick={handleCopy}
+      className="w-full group relative flex items-center justify-between gap-4 rounded-2xl px-5 py-4 transition-all duration-200 border-2"
+      style={{
+        background: copied ? "oklch(0.96 0.04 155)" : "oklch(0.97 0.015 150)",
+        borderColor: copied ? "oklch(0.60 0.15 155)" : "oklch(0.85 0.04 150)",
+      }}
     >
-      {/* Hero Section */}
-      <Box
-        sx={{
-          py: 5,
-          px: 2,
-          textAlign: "center",
+      <span
+        className="font-mono font-bold tracking-[0.08em] text-base sm:text-lg transition-colors whitespace-nowrap"
+        style={{ color: copied ? "oklch(0.35 0.12 155)" : "oklch(0.30 0.10 150)" }}
+      >
+        {IBAN}
+      </span>
+      <div
+        className="flex items-center gap-1.5 flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+        style={{
+          background: copied ? "oklch(0.448 0.119 150)" : "oklch(0.448 0.119 150 / 0.15)",
+          color: copied ? "white" : "oklch(0.35 0.10 150)",
         }}
       >
-        <Container maxWidth="md">
-          <Typography
-            variant="h2"
-            component="h1"
-            sx={{ fontWeight: "bold", mb: 3, color: "text.primary" }}
+        {copied ? (
+          <CheckCircle2 className="w-3.5 h-3.5" />
+        ) : (
+          <Copy className="w-3.5 h-3.5" />
+        )}
+        {copied ? "Kopirano!" : "Kopiraj"}
+      </div>
+    </button>
+  );
+}
+
+export default function Payment() {
+  const { user } = useAuth();
+  const { users } = useUsers();
+
+  const currentUser = useMemo(
+    () => users.find((u) => u.user_id === user?.id),
+    [user, users]
+  );
+
+  const now = new Date();
+  const currentMonthName = [
+    "siječnja", "veljače", "ožujka", "travnja", "svibnja", "lipnja",
+    "srpnja", "kolovoza", "rujna", "listopada", "studenog", "prosinca",
+  ][now.getMonth()];
+  const isPaid = currentUser?.paid;
+
+  return (
+    <div className="container max-w-xl mx-auto py-10 px-4">
+      {/* Page title */}
+      <div className="mb-7">
+        <h1 className="text-2xl font-bold tracking-tight">Uplate</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Podaci za uplatu mjesečne članarine
+        </p>
+      </div>
+
+      {/* Payment status pill — only for non-admin */}
+      {currentUser && !currentUser.is_admin && (
+        <div
+          className="flex items-center gap-3 rounded-2xl px-5 py-3.5 mb-5 border"
+          style={
+            isPaid
+              ? {
+                  background: "oklch(0.96 0.04 155)",
+                  borderColor: "oklch(0.80 0.10 155)",
+                }
+              : {
+                  background: "oklch(0.97 0.04 27)",
+                  borderColor: "oklch(0.82 0.10 27)",
+                }
+          }
+        >
+          {isPaid ? (
+            <CheckCircle2
+              className="w-5 h-5 flex-shrink-0"
+              style={{ color: "oklch(0.45 0.14 155)" }}
+            />
+          ) : (
+            <AlertCircle
+              className="w-5 h-5 flex-shrink-0"
+              style={{ color: "oklch(0.50 0.18 27)" }}
+            />
+          )}
+          <p
+            className="text-sm font-medium"
+            style={{
+              color: isPaid ? "oklch(0.35 0.12 155)" : "oklch(0.40 0.15 27)",
+            }}
           >
-            Uplate i članarina
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Informacije o plaćanju članarine za DGTE ligu
-          </Typography>
-        </Container>
-      </Box>
+            {isPaid
+              ? "Vaša članarina je plaćena za ovaj mjesec ✓"
+              : `Vaša članarina za ${currentMonthName} još nije evidentirana.`}
+          </p>
+        </div>
+      )}
 
-      {/* Pricing Section */}
-      <Box sx={{ py: 8, px: 2 }}>
-        <Container maxWidth="sm">
-          <Box sx={{ textAlign: "center", mb: 6 }}>
-            <Typography
-              variant="h3"
-              component="h2"
-              sx={{ fontWeight: "bold", mb: 2 }}
+      {/* Main payment card */}
+      <Card className="shadow-md border-border/70 overflow-hidden py-0">
+        {/* Price section */}
+        <div
+          className="px-7 py-8 text-center border-b border-border"
+          style={{ background: "oklch(0.985 0.008 85)" }}
+        >
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground mb-3">
+            Mjesečna članarina · Sezona 2026
+          </p>
+          <div className="flex items-start justify-center gap-1">
+            <span className="text-2xl font-bold text-muted-foreground mt-3">€</span>
+            <span
+              className="text-8xl font-black leading-none tracking-tighter"
+              style={{ color: "oklch(0.30 0.10 150)" }}
             >
-              Cijena Lige
-            </Typography>
-          </Box>
+              35
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            po igraču · termini uključeni u cijenu
+          </p>
+        </div>
 
-          <Card sx={{ maxWidth: "400px", mx: "auto", boxShadow: 4 }}>
-            <CardContent sx={{ textAlign: "center", p: 4 }}>
-              <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
-                Mjesečna članarina
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Cijena za ligu kroz cijelu godinu
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mb: 2,
-                }}
-              >
-                <Euro sx={{ fontSize: 40, color: "primary.main", mr: 1 }} />
-                <Typography
-                  variant="h2"
-                  component="span"
-                  sx={{ fontWeight: "bold", color: "primary.main" }}
-                >
-                  35
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Container>
-      </Box>
+        {/* Payment details */}
+        <CardContent className="p-0">
+          {/* Deadline row */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <span className="text-sm text-muted-foreground">Rok za uplatu</span>
+            <span className="text-sm font-semibold">
+              Do <strong>10.</strong> u mjesecu
+            </span>
+          </div>
 
-      {/* Payment Information */}
-      <Box sx={{ py: 8, px: 2, bgcolor: "grey.50" }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: "center", mb: 6 }}>
-            <Typography
-              variant="h3"
-              component="h2"
-              sx={{ fontWeight: "bold", mb: 2 }}
-            >
-              Informacije o uplati
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
-              Kako i kada platiti članarinu
-            </Typography>
-          </Box>
+          {/* IBAN section */}
+          <div className="px-6 py-5 border-b border-border">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">Broj računa (IBAN)</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                Klikni za kopiranje
+              </span>
+            </div>
+            <IbanButton />
+          </div>
 
-          <Card sx={{ maxWidth: "600px", mx: "auto", boxShadow: 3 }}>
-            <CardContent sx={{ p: 4 }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                <Clock sx={{ color: "primary.main", mr: 1 }} />
-                <Typography
-                  variant="h5"
-                  component="h3"
-                  sx={{ fontWeight: "bold" }}
-                >
-                  Rok za uplatu
-                </Typography>
-              </Box>
+          {/* Payment reference */}
+          <div className="px-6 py-4 border-b border-border">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Opis uplate</span>
+              <span className="text-sm font-mono font-medium text-foreground">
+                članarina dgte liga za mjesec ····
+              </span>
+            </div>
+          </div>
 
-              <Typography variant="body1" sx={{ mb: 4 }}>
-                Uplate za ligu izvršite do 10.-og u mjesecu za tekući mjesec na
-                broj računa od Udruge:
-              </Typography>
-
-              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                <Bank sx={{ color: "primary.main", mr: 1 }} />
-                <Typography
-                  variant="h5"
-                  component="h3"
-                  sx={{ fontWeight: "bold" }}
-                >
-                  Broj računa
-                </Typography>
-              </Box>
-
-              <Card
-                sx={{
-                  bgcolor: "primary.light",
-                  color: "primary.contrastText",
-                  mb: 3,
-                }}
-              >
-                <CardContent sx={{ textAlign: "center", py: 2 }}>
-                  <Typography
-                    variant="h4"
-                    component="div"
-                    fontSize=""
-                    sx={{
-                      fontWeight: "bold",
-                      fontFamily: "monospace",
-                      fontSize: { xs: "1rem", sm: "2rem", md: "2.5rem" },
-                    }}
-                  >
-                    HR3923400091111199032
-                  </Typography>
-                </CardContent>
-              </Card>
-
-              <Divider sx={{ my: 3 }} />
-
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  variant="h6"
-                  component="h4"
-                  sx={{ fontWeight: "bold", mb: 2 }}
-                >
-                  Opis uplate:
-                </Typography>
-                <Typography variant="body1" sx={{ fontStyle: "italic" }}>
-                  članarina dgte liga za mjesec ........
-                </Typography>
-              </Box>
-
-              <Alert severity="info" sx={{ mt: 3 }}>
-                <Typography variant="body2">
-                  <strong>NAPOMENA:</strong> U cijeni članarine su vam i termini
-                  koje igrate u ligi, ne morate ništa plaćati kada odigrate meč.
-                </Typography>
-              </Alert>
-            </CardContent>
-          </Card>
-        </Container>
-      </Box>
-
-      {/* Footer */}
-      <Paper sx={{ mt: 4 }} elevation={0}>
-        <Container maxWidth="md">
-          <Box sx={{ textAlign: "center" }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                mb: 2,
-              }}
-            >
-              <Trophy sx={{ color: "primary.main", mr: 1 }} />
-              <Typography
-                variant="h5"
-                component="h4"
-                sx={{ fontWeight: "bold" }}
-              >
-                DGTE - Liga
-              </Typography>
-            </Box>
-            <Typography variant="body1" color="text.secondary">
-              Tenis liga za sve razine igrača
-            </Typography>
-          </Box>
-        </Container>
-      </Paper>
-    </Box>
+          {/* Note */}
+          <div className="px-6 py-4 bg-muted/30">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <span className="font-semibold text-foreground">Napomena:</span>{" "}
+              U cijeni članarine su uključeni svi termini koje igrate u ligi —
+              ne morate ništa plaćati kada odigrate meč.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

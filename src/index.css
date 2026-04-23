@@ -1,1 +1,119 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  DGTE Liga Design System
+  ─────────────────────────────────
+  Philosophy: Confident sports editorial.
+  Not a SaaS dashboard — a real league tracker.
+  
+  Primary:   Forest green — the court. Familiar, grounded, alive.
+  Surface:   Warm off-white, not cold blue-gray.
+  Sidebar:   Near-black with warm undertone, feels like leather.
+  Type:      Inter — clean, legible, not quirky.
+*/
+
+@theme inline {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Inter', system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Consistent radius — tighter, more professional */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 14px;
+}
+
+:root {
+  /* Background: warm off-white, not cold blue */
+  --background:         oklch(0.978 0.006 85);
+
+  /* Foreground: near-black with warm tone, readable */
+  --foreground:         oklch(0.13 0.016 85);
+
+  /* Card: pure white for contrast against background */
+  --card:               oklch(1 0 0);
+  --card-foreground:    oklch(0.13 0.016 85);
+
+  --popover:            oklch(1 0 0);
+  --popover-foreground: oklch(0.13 0.016 85);
+
+  /*
+    Primary: Forest green — #166534 / #15803d territory
+    This is the court. Confident, not trendy.
+  */
+  --primary:            oklch(0.448 0.119 150);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary: warm light gray for subtle chips/tags */
+  --secondary:          oklch(0.955 0.008 85);
+  --secondary-foreground: oklch(0.30 0.016 85);
+
+  /* Muted: very subtle warm gray */
+  --muted:              oklch(0.955 0.008 85);
+  --muted-foreground:   oklch(0.50 0.012 85);
+
+  /* Accent: slightly stronger warm gray for hover states */
+  --accent:             oklch(0.936 0.010 85);
+  --accent-foreground:  oklch(0.13 0.016 85);
+
+  --destructive:        oklch(0.577 0.245 27);
+
+  /* Border: warm light gray — not cold blue */
+  --border:             oklch(0.888 0.012 85);
+  --input:              oklch(0.888 0.012 85);
+  --ring:               oklch(0.448 0.119 150);
+
+  --radius: 6px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+/* ── Scrollbar styling — minimal, matches the theme ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.80 0.008 85);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.65 0.010 85);
+}
