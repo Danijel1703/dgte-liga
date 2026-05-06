@@ -368,25 +368,25 @@ export default function Matches() {
                       </div>
                     </div>
                   ) : (
-                    /* VS display */
-                    <div className="flex items-center gap-4">
+                    /* VS display — stacked vertically so names are always readable */
+                    <div className="flex items-center justify-between gap-2">
                       {/* Current player */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
                         <PlayerAvatar
                           firstName={player!.first_name}
                           lastName={player!.last_name}
                           size="lg"
                         />
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold truncate">
-                            {player!.first_name} {player!.last_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Ti</p>
-                        </div>
+                        <p className="text-sm font-bold text-center leading-tight">
+                          {player!.first_name}
+                          <br />
+                          {player!.last_name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">Ti</p>
                       </div>
 
                       {/* VS badge */}
-                      <div className="flex flex-col items-center gap-1 flex-shrink-0 px-2">
+                      <div className="flex flex-col items-center gap-1 flex-shrink-0 px-1">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                           <Swords className="w-5 h-5 text-primary" />
                         </div>
@@ -402,33 +402,33 @@ export default function Matches() {
                       </div>
 
                       {/* Opponent */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
-                        <div className="min-w-0 text-right">
-                          <p className="text-sm font-bold truncate">
-                            {wo.opponent.first_name} {wo.opponent.last_name}
-                          </p>
-                          <Badge
-                            variant="secondary"
-                            className={
-                              wo.match.status === "surrendered"
-                                ? "bg-amber-100 text-amber-700 text-[10px]"
-                                : isMatchCompleted
-                                ? "bg-emerald-100 text-emerald-700 text-[10px]"
-                                : "bg-muted text-muted-foreground text-[10px]"
-                            }
-                          >
-                            {wo.match.status === "surrendered"
-                              ? "Predaja"
-                              : isMatchCompleted
-                              ? "Završen"
-                              : "Čeka"}
-                          </Badge>
-                        </div>
+                      <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
                         <PlayerAvatar
                           firstName={wo.opponent.first_name}
                           lastName={wo.opponent.last_name}
                           size="lg"
                         />
+                        <p className="text-sm font-bold text-center leading-tight">
+                          {wo.opponent.first_name}
+                          <br />
+                          {wo.opponent.last_name}
+                        </p>
+                        <Badge
+                          variant="secondary"
+                          className={
+                            wo.match.status === "surrendered"
+                              ? "bg-amber-100 text-amber-700 text-[10px]"
+                              : isMatchCompleted
+                              ? "bg-emerald-100 text-emerald-700 text-[10px]"
+                              : "bg-muted text-muted-foreground text-[10px]"
+                          }
+                        >
+                          {wo.match.status === "surrendered"
+                            ? "Predaja"
+                            : isMatchCompleted
+                            ? "Završen"
+                            : "Čeka"}
+                        </Badge>
                       </div>
                     </div>
                   )}
