@@ -1,6 +1,7 @@
-import { Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, RefreshCw, Trash2, Swords, Calendar, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -24,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import { useAuth } from "../providers/AuthProvider";
 import { useLoader } from "../providers/Loader";
@@ -33,6 +34,7 @@ import type { TGroup, TMatch, TUser } from "../types";
 import { supabase } from "../utils/supabase";
 import { generateSchedule } from "../utils/generateSchedule";
 import { EditMatchModal } from "../components/EditMatchModal";
+import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { orderBy } from "lodash-es";
 
 const MONTHS = [
@@ -60,9 +62,19 @@ type JoinedMatch = TMatch & {
   group: TGroup;
 };
 
+type WeeklyOpponent = {
+  opponent: TUser;
+  match: JoinedMatch;
+  group: TGroup;
+  currentWeek: number;
+  totalRounds: number;
+};
+
 export default function Matches() {
   const [selectedMatch, setSelectedMatch] = useState<JoinedMatch | null>(null);
   const [matches, setMatches] = useState<JoinedMatch[]>([]);
+  const [allMonthMatches, setAllMonthMatches] = useState<JoinedMatch[]>([]);
+  const [monthGroups, setMonthGroups] = useState<TGroup[]>([]);
   const { users: players } = useUsers();
   const [modalOpen, setModalOpen] = useState(false);
   const { user } = useAuth();
@@ -85,32 +97,115 @@ export default function Matches() {
 
   const initialize = async () => {
     setLoading(true);
+
+    const startOfMonth = selectedDayjs.startOf("month");
+    const endOfMonth = selectedDayjs.endOf("month");
+
+    // Fetch matches
     const { data: matchesData } = await supabase
       .from("match")
       .select(`*, player_one:player_one_id (*), player_two:player_two_id (*), group:group_id (*)`)
       .eq("is_deleted", false);
 
-    if (matchesData) {
-      const items = orderBy(matchesData, "group.name") as JoinedMatch[];
-      let filtered = showOnlyMine
-        ? items.filter((t) => [t.player_one_id, t.player_two_id].includes(user?.id as string))
-        : items;
+    // Fetch groups for the selected month (needed for created_at anchor)
+    const { data: groupsData } = await supabase
+      .from("group")
+      .select(`*, members:group_member (*, user:user_id (*))`)
+      .eq("is_deleted", false)
+      .eq("members.is_deleted", false)
+      .gte("created_at", startOfMonth.toISOString())
+      .lte("created_at", endOfMonth.toISOString());
 
-      const startOfMonth = selectedDayjs.startOf("month");
-      const endOfMonth = selectedDayjs.endOf("month");
-      filtered = filtered.filter((match) => {
+    if (groupsData) {
+      setMonthGroups(groupsData as TGroup[]);
+    }
+
+    if (matchesData) {
+      const items = orderBy(matchesData, ["round", "group.name"]) as JoinedMatch[];
+
+      // Filter by month
+      const monthFiltered = items.filter((match) => {
         if (!match.created_at) return false;
         const d = dayjs(match.created_at);
         return d.isAfter(startOfMonth.subtract(1, "ms")) && d.isBefore(endOfMonth.add(1, "ms"));
       });
+
+      setAllMonthMatches(monthFiltered);
+
+      const filtered = showOnlyMine
+        ? monthFiltered.filter((t) => [t.player_one_id, t.player_two_id].includes(user?.id as string))
+        : monthFiltered;
       setMatches(filtered);
     } else {
       setMatches([]);
+      setAllMonthMatches([]);
     }
     setLoading(false);
   };
 
   useEffect(() => { initialize(); }, [showOnlyMine, selectedMonth, selectedYear]);
+
+  // Calculate current week's opponent(s) for the logged-in player
+  const weeklyOpponents = useMemo<WeeklyOpponent[]>(() => {
+    if (!user?.id || !player || player.is_viewer) return [];
+
+    const today = dayjs();
+    const isCurrentMonth = selectedDayjs.isSame(today, "month");
+    if (!isCurrentMonth) return [];
+
+    const results: WeeklyOpponent[] = [];
+
+    // Find groups the player belongs to
+    const playerGroups = monthGroups.filter((g) =>
+      g.members.some((m) => m.user_id === user.id)
+    );
+
+    for (const group of playerGroups) {
+      const groupCreated = dayjs(group.created_at);
+      const daysSinceCreation = today.diff(groupCreated, "day");
+      const currentWeek = Math.floor(daysSinceCreation / 7) + 1;
+
+      // Calculate total rounds for this group
+      const memberCount = group.members.length;
+      const totalRounds = memberCount % 2 === 0 ? memberCount - 1 : memberCount;
+
+      // Find the match for this round
+      const weekMatch = allMonthMatches.find(
+        (m) =>
+          m.group_id === group.id &&
+          m.round === currentWeek &&
+          (m.player_one_id === user.id || m.player_two_id === user.id)
+      );
+
+      if (weekMatch) {
+        const opponentId =
+          weekMatch.player_one_id === user.id
+            ? weekMatch.player_two_id
+            : weekMatch.player_one_id;
+        const opponent = players.find((p) => p.user_id === opponentId);
+        if (opponent) {
+          results.push({
+            opponent,
+            match: weekMatch,
+            group,
+            currentWeek,
+            totalRounds,
+          });
+        }
+      } else if (currentWeek >= 1 && currentWeek <= totalRounds) {
+        // Player has a bye this week (odd group)
+        results.push({
+          opponent: null as unknown as TUser,
+          match: null as unknown as JoinedMatch,
+          group,
+          currentWeek,
+          totalRounds,
+        });
+      }
+    }
+
+    return results;
+  }, [user?.id, monthGroups, allMonthMatches, players, selectedDayjs]);
 
   const calculateSetResult = (match: TMatch) => {
     const hasResults = match.sets.some((s) => s.player_one_games > 0 || s.player_two_games > 0);
@@ -222,12 +317,135 @@ export default function Matches() {
         )}
       </div>
 
+      {/* This Week's Opponent Banner */}
+      {weeklyOpponents.length > 0 && (
+        <div className="mb-6 space-y-3">
+          {weeklyOpponents.map((wo) => {
+            const isBye = !wo.opponent;
+            const isMatchCompleted = wo.match?.status === "played" || wo.match?.status === "surrendered";
+
+            return (
+              <Card
+                key={wo.group.id}
+                className="overflow-hidden border-2 shadow-md"
+                style={{ borderColor: wo.group.color + "40" }}
+              >
+                {/* Gradient accent bar */}
+                <div
+                  className="h-1.5"
+                  style={{
+                    background: `linear-gradient(90deg, ${wo.group.color}, ${wo.group.color}88, transparent)`,
+                  }}
+                />
+                <CardContent className="p-5">
+                  {/* Header row */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Tjedan {wo.currentWeek} od {wo.totalRounds}
+                    </span>
+                    <span
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white ml-auto"
+                      style={{ backgroundColor: wo.group.color }}
+                    >
+                      {wo.group.name}
+                    </span>
+                  </div>
+
+                  {isBye ? (
+                    /* Bye week */
+                    <div className="flex items-center gap-3 py-3">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                        <Coffee className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-muted-foreground">
+                          Slobodan tjedan
+                        </p>
+                        <p className="text-xs text-muted-foreground/70">
+                          Nemaš protivnika ovog tjedna u ovoj grupi
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    /* VS display */
+                    <div className="flex items-center gap-4">
+                      {/* Current player */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <PlayerAvatar
+                          firstName={player!.first_name}
+                          lastName={player!.last_name}
+                          size="lg"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate">
+                            {player!.first_name} {player!.last_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Ti</p>
+                        </div>
+                      </div>
+
+                      {/* VS badge */}
+                      <div className="flex flex-col items-center gap-1 flex-shrink-0 px-2">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Swords className="w-5 h-5 text-primary" />
+                        </div>
+                        {isMatchCompleted ? (
+                          <span className="text-xs font-bold text-emerald-600">
+                            {calculateSetResult(wo.match)}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                            VS
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Opponent */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
+                        <div className="min-w-0 text-right">
+                          <p className="text-sm font-bold truncate">
+                            {wo.opponent.first_name} {wo.opponent.last_name}
+                          </p>
+                          <Badge
+                            variant="secondary"
+                            className={
+                              wo.match.status === "surrendered"
+                                ? "bg-amber-100 text-amber-700 text-[10px]"
+                                : isMatchCompleted
+                                ? "bg-emerald-100 text-emerald-700 text-[10px]"
+                                : "bg-muted text-muted-foreground text-[10px]"
+                            }
+                          >
+                            {wo.match.status === "surrendered"
+                              ? "Predaja"
+                              : isMatchCompleted
+                              ? "Završen"
+                              : "Čeka"}
+                          </Badge>
+                        </div>
+                        <PlayerAvatar
+                          firstName={wo.opponent.first_name}
+                          lastName={wo.opponent.last_name}
+                          size="lg"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
       {/* Table */}
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-10">#</TableHead>
+              <TableHead className="text-center w-16">Tjedan</TableHead>
               <TableHead>Igrač 1</TableHead>
               <TableHead>Igrač 2</TableHead>
               <TableHead className="text-center">Rezultat</TableHead>
@@ -246,6 +464,15 @@ export default function Matches() {
               return (
                 <TableRow key={match.id} className="hover:bg-muted/30">
                   <TableCell className="text-sm text-muted-foreground">{index + 1}</TableCell>
+                  <TableCell className="text-center">
+                    {match.round ? (
+                      <span className="text-xs font-mono font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                        {match.round}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">–</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {p1 && (

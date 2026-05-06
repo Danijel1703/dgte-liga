@@ -66,6 +66,7 @@ export type TMatch = {
   status: TStatus;
   group_id: string;
   is_surrender: boolean;
+  round?: number;
   is_deleted: boolean;
   created_at?: string;
   group?: {
