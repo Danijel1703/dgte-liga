@@ -218,6 +218,20 @@ export default function Matches() {
     return `${p1} - ${p2}`;
   };
 
+  /** Score from the perspective of a given player (their wins first). */
+  const calculateSetResultForPlayer = (match: TMatch, playerId: string) => {
+    const hasResults = match.sets.some((s) => s.player_one_games > 0 || s.player_two_games > 0);
+    if (!hasResults) return "-";
+    let p1 = 0, p2 = 0;
+    match.sets.forEach((s) => {
+      if (s.player_one_games > s.player_two_games) p1++;
+      else if (s.player_two_games > s.player_one_games) p2++;
+    });
+    // If the given player is player_two, flip so their score comes first
+    if (playerId === match.player_two_id) return `${p2} - ${p1}`;
+    return `${p1} - ${p2}`;
+  };
+
   const determineWinner = (match: TMatch): string => {
     let p1 = 0, p2 = 0;
     match.sets.forEach((s) => {
@@ -392,7 +406,7 @@ export default function Matches() {
                         </div>
                         {isMatchCompleted ? (
                           <span className="text-xs font-bold text-emerald-600">
-                            {calculateSetResult(wo.match)}
+                            {calculateSetResultForPlayer(wo.match, user!.id)}
                           </span>
                         ) : (
                           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
