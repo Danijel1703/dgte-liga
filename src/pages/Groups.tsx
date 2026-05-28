@@ -94,11 +94,11 @@ export default function GroupsPage() {
           playerMatches.forEach((match) => {
             const isPlayerOne = match.player_one_id === member.user_id;
             if (match.sets && Array.isArray(match.sets)) {
-              match.sets.forEach((set) => {
-                if (set) {
-                  gems += isPlayerOne ? set.player_one_games || 0 : set.player_two_games || 0;
-                  gemsLost += isPlayerOne ? set.player_two_games || 0 : set.player_one_games || 0;
-                }
+              // Only count games from sets 1 and 2 — tie-break (set 3) only determines match winner, not gem difference
+              const nonTieBreakSets = match.sets.filter((set) => set && set.set_number !== 3);
+              nonTieBreakSets.forEach((set) => {
+                gems += isPlayerOne ? set.player_one_games || 0 : set.player_two_games || 0;
+                gemsLost += isPlayerOne ? set.player_two_games || 0 : set.player_one_games || 0;
               });
             }
           });
