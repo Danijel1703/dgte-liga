@@ -12,6 +12,8 @@ import {
   User,
   LogOut,
   Menu,
+  Trophy,
+  Activity,
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -28,8 +30,10 @@ const menuItems = [
   { text: "Dodaj igrača", icon: UserPlus, path: "/add-player", adminOnly: true as const },
   { text: "Grupe", icon: LayoutGrid, path: "/groups" },
   { text: "Raspored", icon: Clock, path: "/matches" },
+  { text: "Kupovi", icon: Trophy, path: "/kupovi" },
   { text: "Povijest mečeva", icon: History, path: "/match-history" },
   { text: "Rang lista", icon: BarChart2, path: "/rankings" },
+  { text: "Statistika", icon: Activity, path: "/statistika" },
   { text: "Članarine", icon: CalendarDays, path: "/clanarine" },
   { text: "Uplate", icon: CreditCard, path: "/payment" },
   { text: "Pravila", icon: BookOpen, path: "/rules" },
@@ -97,7 +101,11 @@ function NavContent({ onNavigate }: { onNavigate: (path: string) => void }) {
         {menuItems
           .filter((item) => !item.adminOnly || currentUser?.is_admin)
           .map((item) => {
-            const isActive = pathname === item.path;
+            // Detail pages keep their parent nav entry highlighted
+            const isActive =
+              pathname === item.path ||
+              (item.path === "/kupovi" && pathname.startsWith("/kup/")) ||
+              (item.path === "/players" && pathname.startsWith("/igrac/"));
             const Icon = item.icon;
             return (
               <button

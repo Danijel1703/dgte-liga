@@ -13,13 +13,22 @@ import { reverse, sortBy, sum } from "lodash-es";
 import { useEffect, useState } from "react";
 import { useLoader } from "../providers/Loader";
 import { useUsers } from "../providers/UsersProvider";
-import type { TMatch, TSet } from "../types";
+import type { TCupGroup, TCupMatch, TMatch, TSet } from "../types";
 import { supabase } from "../utils/supabase";
+import {
+  calculateCupPointsByUserId,
+  sumCupPointsAcrossCups,
+} from "../utils/cupPoints";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 type TRankItem = {
   numberOfWins: number;
+  /** Wins in the monthly league × 3. */
+  leaguePoints: number;
+  /** Sum of this player's points across every cup. */
+  cupPoints: number;
+  /** leaguePoints + cupPoints — what the table and podium rank on. */
   totalPoints: number;
   firstName: string;
   lastName: string;
@@ -68,6 +77,11 @@ function PodiumCard({ rank, position }: { rank: TRankItem; position: 1 | 2 | 3 }
         {rank.firstName} {rank.lastName}
       </p>
       <p className="text-xs text-muted-foreground mt-0.5">{rank.numberOfWins} pobjede</p>
+      {rank.cupPoints > 0 && (
+        <p className="text-[10px] text-muted-foreground">
+          Liga {rank.leaguePoints} · Kup {rank.cupPoints}
+        </p>
+      )}
       <Badge className={`mt-2 text-xs border ${c.labelBg} hover:${c.labelBg}`}>
         {rank.totalPoints} bod.
       </Badge>
@@ -85,9 +99,11 @@ function SkeletonRankRow() {
           <div className="h-4 bg-muted rounded animate-pulse w-28" />
         </div>
       </TableCell>
-      <TableCell><div className="h-4 bg-muted rounded animate-pulse w-8 mx-auto" /></TableCell>
-      <TableCell><div className="h-4 bg-muted rounded animate-pulse w-12 mx-auto" /></TableCell>
+      <TableCell className="hidden sm:table-cell"><div className="h-4 bg-muted rounded animate-pulse w-8 mx-auto" /></TableCell>
+      <TableCell className="hidden sm:table-cell"><div className="h-4 bg-muted rounded animate-pulse w-12 mx-auto" /></TableCell>
       <TableCell><div className="h-5 bg-muted rounded animate-pulse w-10 mx-auto" /></TableCell>
+      <TableCell><div className="h-4 bg-muted rounded animate-pulse w-6 mx-auto" /></TableCell>
+      <TableCell><div className="h-4 bg-muted rounded animate-pulse w-6 mx-auto" /></TableCell>
       <TableCell><div className="h-4 bg-muted rounded animate-pulse w-6 mx-auto" /></TableCell>
     </TableRow>
   );
@@ -102,10 +118,50 @@ export const Rankings = () => {
   const initialize = async () => {
     setLoading(true);
     setDataLoading(true);
-    const { data: matchesData } = await supabase
-      .from("match")
-      .select("*, group (*, group_member (*))");
+    const [{ data: matchesData }, { data: cupGroupsData }, { data: cupMatchesData }] =
+      await Promise.all([
+        // is_deleted must be filtered here: soft-deleted matches would
+        // otherwise still award wins, points and gems on the rank list.
+        supabase
+          .from("match")
+          .select("*, group (*, group_member (*))")
+          .eq("is_deleted", false),
+        supabase
+          .from("cup_group")
+          .select("*, members:cup_group_member (*), cup!inner (is_deleted)")
+          .eq("is_deleted", false)
+          .eq("members.is_deleted", false)
+          .eq("cup.is_deleted", false),
+        supabase.from("cup_match").select("*").eq("is_deleted", false),
+      ]);
+
     const allMatches = (matchesData || []) as TMatch[];
+
+    // Points are computed per cup and then summed. Cups must be kept apart:
+    // calculateCupPoints emits one row per player, so pooling several cups
+    // would collapse a repeat participant into a single entry, and one cup's
+    // group matches would leak into another's win count.
+    const groupsByCup = new Map<string, TCupGroup[]>();
+    for (const group of (cupGroupsData || []) as TCupGroup[]) {
+      const list = groupsByCup.get(group.cup_id) ?? [];
+      list.push({ ...group, members: group.members ?? [] });
+      groupsByCup.set(group.cup_id, list);
+    }
+
+    const matchesByCup = new Map<string, TCupMatch[]>();
+    for (const match of (cupMatchesData || []) as TCupMatch[]) {
+      const list = matchesByCup.get(match.cup_id) ?? [];
+      list.push(match);
+      matchesByCup.set(match.cup_id, list);
+    }
+
+    // A soft-deleted cup contributes no groups, so it drops out here.
+    const cupPointsByUser = sumCupPointsAcrossCups(
+      Array.from(groupsByCup.entries()).map(([cupId, cupGroups]) =>
+        calculateCupPointsByUserId(cupGroups, matchesByCup.get(cupId) ?? [])
+      )
+    );
+
     const items: TRankItem[] = [];
 
     for (const user of users) {
@@ -128,11 +184,15 @@ export const Rankings = () => {
       });
 
       const numberOfWins = userMatches.filter((m) => m.winner_id === user.user_id).length;
+      const leaguePoints = numberOfWins * 3;
+      const cupPoints = cupPointsByUser[user.user_id] ?? 0;
       items.push({
         numberOfWins,
         gamesWon,
         gamesLost,
-        totalPoints: numberOfWins * 3,
+        leaguePoints,
+        cupPoints,
+        totalPoints: leaguePoints + cupPoints,
         firstName: user.first_name,
         lastName: user.last_name,
         avatar: user.avatar,
@@ -141,7 +201,11 @@ export const Rankings = () => {
       });
     }
 
-    setRankings(items.filter((i) => i.matchesPlayed > 0 && !i.isDeleted));
+    // A cup-only participant has no league matches, so cup points alone must
+    // be enough to appear on the list.
+    setRankings(
+      items.filter((i) => (i.matchesPlayed > 0 || i.cupPoints > 0) && !i.isDeleted)
+    );
     setLoading(false);
     setDataLoading(false);
   };
@@ -162,7 +226,7 @@ export const Rankings = () => {
     <div className="container max-w-5xl mx-auto py-8 px-4">
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Rang lista</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Poredak igrača po bodovima i gem razlici</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Poredak igrača po ukupnim bodovima (liga + kup)</p>
       </div>
 
       {/* Podium — top 1-3 */}
@@ -185,74 +249,87 @@ export const Rankings = () => {
       {dataLoading ? (
         <Card className="shadow-sm overflow-hidden py-0">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="w-14">Rang</TableHead>
-                  <TableHead>Igrač</TableHead>
-                  <TableHead className="text-center">Pobjede</TableHead>
-                  <TableHead className="text-center">Gem +/-</TableHead>
-                  <TableHead className="text-center">Razlika</TableHead>
-                  <TableHead className="text-center font-bold">Bodovi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[1, 2, 3, 4, 5].map((i) => <SkeletonRankRow key={i} />)}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="w-14">Rang</TableHead>
+                    <TableHead>Igrač</TableHead>
+                    <TableHead className="text-center hidden sm:table-cell">Pobjede</TableHead>
+                    <TableHead className="text-center hidden sm:table-cell">Gem +/-</TableHead>
+                    <TableHead className="text-center">Razlika</TableHead>
+                    <TableHead className="text-center">Liga</TableHead>
+                    <TableHead className="text-center">Kup</TableHead>
+                    <TableHead className="text-center font-bold">Ukupno</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[1, 2, 3, 4, 5].map((i) => <SkeletonRankRow key={i} />)}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       ) : sorted.length > 0 ? (
         <Card className="shadow-sm overflow-hidden py-0">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="w-14 font-semibold">Rang</TableHead>
-                  <TableHead className="font-semibold">Igrač</TableHead>
-                  <TableHead className="text-center font-semibold">Pobjede</TableHead>
-                  <TableHead className="text-center font-semibold">Gem +/-</TableHead>
-                  <TableHead className="text-center font-semibold">Razlika</TableHead>
-                  <TableHead className="text-center font-bold">Bodovi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sorted.map((rank, index) => {
-                  const diff = rank.gamesWon - rank.gamesLost;
-                  return (
-                    <TableRow key={index} className="hover:bg-muted/20 transition-colors">
-                      <TableCell>
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
-                          ${index === 0 ? "bg-yellow-100 text-yellow-700" :
-                            index === 1 ? "bg-slate-100 text-slate-600" :
-                            index === 2 ? "bg-amber-100 text-amber-700" :
-                            "bg-muted text-muted-foreground"}`}>
-                          {index + 1}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <PlayerAvatar firstName={rank.firstName} lastName={rank.lastName} />
-                          <span className="font-medium text-sm">{rank.firstName} {rank.lastName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center text-sm">{rank.numberOfWins}</TableCell>
-                      <TableCell className="text-center text-sm text-muted-foreground">
-                        {rank.gamesWon} / {rank.gamesLost}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          className={`text-xs font-mono border-0 ${diff > 0 ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : diff < 0 ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-muted text-muted-foreground hover:bg-muted"}`}
-                        >
-                          {diff > 0 ? `+${diff}` : diff}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center font-bold text-sm">{rank.totalPoints}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="w-14 font-semibold">Rang</TableHead>
+                    <TableHead className="font-semibold">Igrač</TableHead>
+                    <TableHead className="text-center font-semibold hidden sm:table-cell">Pobjede</TableHead>
+                    <TableHead className="text-center font-semibold hidden sm:table-cell">Gem +/-</TableHead>
+                    <TableHead className="text-center font-semibold">Razlika</TableHead>
+                    <TableHead className="text-center font-semibold">Liga</TableHead>
+                    <TableHead className="text-center font-semibold">Kup</TableHead>
+                    <TableHead className="text-center font-bold">Ukupno</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sorted.map((rank, index) => {
+                    const diff = rank.gamesWon - rank.gamesLost;
+                    return (
+                      <TableRow key={index} className="hover:bg-muted/20 transition-colors">
+                        <TableCell>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+                            ${index === 0 ? "bg-yellow-100 text-yellow-700" :
+                              index === 1 ? "bg-slate-100 text-slate-600" :
+                              index === 2 ? "bg-amber-100 text-amber-700" :
+                              "bg-muted text-muted-foreground"}`}>
+                            {index + 1}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <PlayerAvatar firstName={rank.firstName} lastName={rank.lastName} />
+                            <span className="font-medium text-sm whitespace-nowrap">{rank.firstName} {rank.lastName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center text-sm hidden sm:table-cell">{rank.numberOfWins}</TableCell>
+                        <TableCell className="text-center text-sm text-muted-foreground hidden sm:table-cell">
+                          {rank.gamesWon} / {rank.gamesLost}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            className={`text-xs font-mono border-0 ${diff > 0 ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : diff < 0 ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-muted text-muted-foreground hover:bg-muted"}`}
+                          >
+                            {diff > 0 ? `+${diff}` : diff}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center text-sm text-muted-foreground">{rank.leaguePoints}</TableCell>
+                        {/* A dash reads as "did not play a cup", not "scored zero" */}
+                        <TableCell className="text-center text-sm text-muted-foreground">
+                          {rank.cupPoints > 0 ? rank.cupPoints : "–"}
+                        </TableCell>
+                        <TableCell className="text-center font-bold text-sm">{rank.totalPoints}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       ) : (

@@ -39,6 +39,7 @@ export default function Login() {
       .from("match")
       .select("id", { count: "exact" })
       .eq("status", "played")
+      .eq("is_deleted", false)
       .then(({ count }) => {
         if (count !== null) setMatchCount(count);
       });

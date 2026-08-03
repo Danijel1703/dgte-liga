@@ -76,6 +76,9 @@ export default function GroupsPage() {
       .select(`*, members:group_member (*, user:user_id (*)), match (*)`)
       .eq("is_deleted", false)
       .eq("members.is_deleted", false)
+      // Without this, soft-deleted matches still feed points and gem
+      // difference — including every duplicate the dedupe tool removed.
+      .eq("match.is_deleted", false)
       .gte("created_at", startOfMonth.toISOString())
       .lte("created_at", endOfMonth.toISOString());
 

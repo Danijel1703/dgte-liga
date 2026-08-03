@@ -23,6 +23,10 @@ import Rules from "./pages/Rules.tsx";
 import Payment from "./pages/Payment.tsx";
 import Membership from "./pages/Membership.tsx";
 import MatchHistory from "./pages/MatchHistory.tsx";
+import Cups from "./pages/Cups.tsx";
+import CupDetail from "./pages/CupDetail.tsx";
+import Statistics from "./pages/Statistics.tsx";
+import PlayerProfile from "./pages/PlayerProfile.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -46,6 +50,10 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="payment" element={<Payment />} />
                 <Route path="clanarine" element={<Membership />} />
                 <Route path="match-history" element={<MatchHistory />} />
+                <Route path="kupovi" element={<Cups />} />
+                <Route path="kup/:id" element={<CupDetail />} />
+                <Route path="statistika" element={<Statistics />} />
+                <Route path="igrac/:id" element={<PlayerProfile />} />
                 <Route path="/" element={<Home />} />
               </Routes>
             </Layout>

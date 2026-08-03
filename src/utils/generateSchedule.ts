@@ -1,51 +1,7 @@
 import type { TGroup, TGroupMember, TMatch } from "../types";
 import { supabase } from "./supabase";
+import { buildRoundRobinRounds } from "./roundRobin";
 import dayjs from "dayjs";
-
-/**
- * Round-robin scheduling using the "circle method".
- *
- * For N participants (padded to even with a BYE sentinel if odd):
- *   - Fix participant[0] in place.
- *   - Rotate participants[1..N-1] one position each round.
- *   - Each round, pair top-half vs reversed bottom-half.
- *
- * Returns an array of rounds, where each round is an array of [indexA, indexB] pairs.
- * A pair containing the BYE index (-1) is a bye and should be skipped.
- */
-function buildRoundRobinRounds(playerCount: number): [number, number][][] {
-  const participants: number[] = [];
-  for (let i = 0; i < playerCount; i++) participants.push(i);
-
-  // If odd, add a BYE placeholder
-  if (participants.length % 2 !== 0) participants.push(-1);
-
-  const n = participants.length;
-  const totalRounds = n - 1;
-  const rounds: [number, number][][] = [];
-
-  // Working copy (we'll rotate indices 1..n-1)
-  const list = [...participants];
-
-  for (let round = 0; round < totalRounds; round++) {
-    const pairs: [number, number][] = [];
-    for (let i = 0; i < n / 2; i++) {
-      const home = list[i];
-      const away = list[n - 1 - i];
-      pairs.push([home, away]);
-    }
-    rounds.push(pairs);
-
-    // Rotate: keep list[0] fixed, rotate list[1..n-1] by one position to the right
-    const last = list[n - 1];
-    for (let i = n - 1; i > 1; i--) {
-      list[i] = list[i - 1];
-    }
-    list[1] = last;
-  }
-
-  return rounds;
-}
 
 export const generateSchedule = async (): Promise<TMatch[]> => {
   // Calculate the start and end of the current month
@@ -80,6 +36,21 @@ export const generateSchedule = async (): Promise<TMatch[]> => {
     new Map((data as TGroup[]).map((group) => [group.id, group])).values()
   );
   // -------------------------------------------------------------------
+
+  const groupIds = uniqueGroups.map((g) => g.id).filter(Boolean) as string[];
+  if (groupIds.length > 0) {
+    const { count } = await supabase
+      .from("match")
+      .select("id", { count: "exact", head: true })
+      .in("group_id", groupIds)
+      .eq("is_deleted", false);
+
+    if ((count ?? 0) > 0) {
+      throw new Error(
+        "Raspored za ovaj mjesec već postoji. Ukloni duplikate ili obriši postojeće mečeve prije ponovnog generiranja."
+      );
+    }
+  }
 
   for (const group of uniqueGroups) {
     const members = (group.members as TGroupMember[]) || [];

@@ -1,4 +1,4 @@
-import { Phone, Search, Trash2, Users } from "lucide-react";
+import { ChevronRight, Phone, Search, Trash2, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -11,6 +11,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { sortBy } from "lodash-es";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useUsers } from "../providers/UsersProvider";
 import { useAuth } from "../providers/AuthProvider";
 import { supabase } from "../utils/supabase";
@@ -24,6 +25,7 @@ export default function Players() {
   const { users: players, refresh } = useUsers();
   const { user: authUser } = useAuth();
   const me = players.find((p) => p.user_id === authUser?.id);
+  const navigate = useNavigate();
 
   const filteredPlayers = players.filter(
     (player) =>
@@ -95,13 +97,15 @@ export default function Players() {
                   <TableHead className="font-semibold">Telefon</TableHead>
 
                   {me?.is_admin && <TableHead className="w-16" />}
+                  <TableHead className="w-8" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {activePlayers.map((player) => (
                   <TableRow
                     key={player.user_id}
-                    className="hover:bg-muted/20 transition-colors"
+                    onClick={() => navigate(`/igrac/${player.user_id}`)}
+                    className="hover:bg-muted/20 transition-colors cursor-pointer"
                   >
                     <TableCell>
                       <PlayerAvatar
@@ -112,8 +116,10 @@ export default function Players() {
                     <TableCell className="font-medium">{player.first_name}</TableCell>
                     <TableCell className="font-medium">{player.last_name}</TableCell>
                     <TableCell>
+                      {/* Calling must not also open the profile */}
                       <a
                         href={`tel:${player.phone}`}
+                        onClick={(e) => e.stopPropagation()}
                         className="flex items-center gap-1.5 text-primary hover:underline text-sm"
                       >
                         <Phone className="w-3.5 h-3.5" />
@@ -125,12 +131,13 @@ export default function Players() {
                       <TableCell>
                         {player.user_id !== authUser?.id && (
                           <button
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               handleDeletePlayer(
                                 player.user_id,
                                 `${player.first_name} ${player.last_name}`
-                              )
-                            }
+                              );
+                            }}
                             disabled={loading}
                             className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
                             title="Obriši igrača"
@@ -140,6 +147,9 @@ export default function Players() {
                         )}
                       </TableCell>
                     )}
+                    <TableCell className="w-8">
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

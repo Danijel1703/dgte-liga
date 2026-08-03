@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:cup": "jiti scripts/verify-cup-points.ts",
+    "verify:stats": "jiti scripts/verify-player-stats.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

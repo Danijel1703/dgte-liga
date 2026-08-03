@@ -1,4 +1,4 @@
-import { Pencil, RefreshCw, Trash2, Swords, Calendar, Coffee } from "lucide-react";
+import { Pencil, RefreshCw, Trash2, Swords, Calendar, Coffee, CopyMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +33,7 @@ import { useUsers } from "../providers/UsersProvider";
 import type { TGroup, TMatch, TUser } from "../types";
 import { supabase } from "../utils/supabase";
 import { generateSchedule } from "../utils/generateSchedule";
+import { findDuplicateMatchIdsToDelete } from "../utils/dedupeMonthMatches";
 import { EditMatchModal } from "../components/EditMatchModal";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { orderBy } from "lodash-es";
@@ -86,10 +87,22 @@ export default function Matches() {
   const [selectedYear, setSelectedYear] = useState(String(now.year()));
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [deleteSingleDialogOpen, setDeleteSingleDialogOpen] = useState(false);
+  const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
+  const [dedupePreview, setDedupePreview] = useState({ count: 0, pairs: 0, ambiguous: 0 });
   const [matchToDelete, setMatchToDelete] = useState<JoinedMatch | null>(null);
   const { setLoading } = useLoader();
 
   const selectedDayjs: Dayjs = dayjs(`${selectedYear}-${selectedMonth.padStart(2, "0")}-01`);
+
+  /**
+   * A result may be entered by either player of the match, or by an admin.
+   * Note this is UI gating only — there are no RLS policies on `match`, so the
+   * table is still writable by anyone holding the anon key.
+   */
+  const canEditMatch = (match: JoinedMatch) =>
+    isAdmin ||
+    match.player_one_id === user?.id ||
+    match.player_two_id === user?.id;
 
   useEffect(() => {
     if (player?.is_viewer) setShowOnlyMine(false);
@@ -257,6 +270,9 @@ export default function Matches() {
     const startOfMonth = selectedDayjs.startOf("month");
     const endOfMonth = selectedDayjs.endOf("month");
     const { data: toDelete } = await supabase.from("match").select("id")
+      // Skip already-deleted rows so the reported count is the number of
+      // matches actually removed
+      .eq("is_deleted", false)
       .gte("created_at", startOfMonth.toISOString())
       .lte("created_at", endOfMonth.toISOString());
     if (toDelete && toDelete.length > 0) {
@@ -274,6 +290,44 @@ export default function Matches() {
     toast.success("Meč je obrisan.");
     setDeleteSingleDialogOpen(false);
     setMatchToDelete(null);
+  };
+
+  const openDedupeDialog = () => {
+    const { idsToDelete, duplicatePairCount, skippedAmbiguous } =
+      findDuplicateMatchIdsToDelete(allMonthMatches);
+    setDedupePreview({
+      count: idsToDelete.length,
+      pairs: duplicatePairCount,
+      ambiguous: skippedAmbiguous,
+    });
+    setDedupeDialogOpen(true);
+  };
+
+  const handleRemoveDuplicates = async () => {
+    const { idsToDelete, duplicatePairCount } = findDuplicateMatchIdsToDelete(allMonthMatches);
+    if (idsToDelete.length === 0) {
+      toast.info("Nema duplikata za brisanje.");
+      setDedupeDialogOpen(false);
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase
+      .from("match")
+      .update({ is_deleted: true })
+      .in("id", idsToDelete);
+    setLoading(false);
+
+    if (error) {
+      toast.error("Greška pri brisanju duplikata.");
+      return;
+    }
+
+    toast.success(
+      `Obrisano ${idsToDelete.length} duplikata (${duplicatePairCount} parova). Mečevi s rezultatom su zadržani.`
+    );
+    setDedupeDialogOpen(false);
+    await initialize();
   };
 
   const years = ["2024", "2025", "2026"];
@@ -312,22 +366,39 @@ export default function Matches() {
         </Button>
 
         {isAdmin && (
-          <Button
-            variant="outline"
-            disabled={!isCurrentMonth}
-            className="gap-2 ml-auto"
-            onClick={async () => {
-              const m = await generateSchedule();
-              if (m.length) {
-                await supabase.from("match").insert(m);
-                await initialize();
-                toast.success("Raspored generiran.");
-              }
-            }}
-          >
-            <RefreshCw className="w-4 h-4" />
-            Generiraj raspored
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="gap-2 ml-auto"
+              onClick={openDedupeDialog}
+              disabled={allMonthMatches.length === 0}
+            >
+              <CopyMinus className="w-4 h-4" />
+              Ukloni duplikate
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!isCurrentMonth}
+              className="gap-2"
+              onClick={async () => {
+                try {
+                  const m = await generateSchedule();
+                  if (m.length) {
+                    await supabase.from("match").insert(m);
+                    await initialize();
+                    toast.success("Raspored generiran.");
+                  } else {
+                    toast.info("Nema grupa za generiranje rasporeda.");
+                  }
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Greška pri generiranju.");
+                }
+              }}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Generiraj raspored
+            </Button>
+          </>
         )}
       </div>
 
@@ -537,13 +608,18 @@ export default function Matches() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => { setSelectedMatch({ ...match }); setModalOpen(true); }}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        title="Uredi"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Players enter their own results; admins can fix any
+                          match. Previously every logged-in user could rewrite
+                          anyone else's score. */}
+                      {canEditMatch(match) && (
+                        <button
+                          onClick={() => { setSelectedMatch({ ...match }); setModalOpen(true); }}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                          title="Uredi"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {isAdmin && (
                         <button
                           onClick={() => { setMatchToDelete(match); setDeleteSingleDialogOpen(true); }}
@@ -611,6 +687,46 @@ export default function Matches() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteSingleDialogOpen(false)}>Odustani</Button>
             <Button variant="destructive" onClick={handleDeleteSingleMatch}>Obriši</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Duplicates Dialog */}
+      <Dialog open={dedupeDialogOpen} onOpenChange={setDedupeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ukloni duplikate mečeva</DialogTitle>
+          </DialogHeader>
+          {dedupePreview.count === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nema duplikata u {selectedDayjs.format("MM/YYYY")}.
+            </p>
+          ) : (
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                Pronađeno <span className="font-semibold text-foreground">{dedupePreview.pairs}</span>{" "}
+                parova s duplikatima. Bit će soft-obrisano{" "}
+                <span className="font-semibold text-foreground">{dedupePreview.count}</span> mečeva.
+              </p>
+              <p>
+                Mečevi koji već imaju rezultat (odigrani / predaja) neće biti dirani — zadržava se
+                original, brišu se samo prazni duplikati.
+              </p>
+              {dedupePreview.ambiguous > 0 && (
+                <p className="text-amber-700">
+                  Upozorenje: {dedupePreview.ambiguous} par(ova) ima više od jednog meča s
+                  rezultatom — ti se ne brišu automatski.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDedupeDialogOpen(false)}>Odustani</Button>
+            {dedupePreview.count > 0 && (
+              <Button variant="destructive" onClick={handleRemoveDuplicates}>
+                Ukloni {dedupePreview.count} duplikata
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
