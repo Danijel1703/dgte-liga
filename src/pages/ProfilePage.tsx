@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useCurrentMonthPaid } from "../hooks/useCurrentMonthPaid";
 import { useAuth } from "../providers/AuthProvider";
 import { useUsers } from "../providers/UsersProvider";
 import type { TUser } from "../types";
@@ -18,6 +19,7 @@ export { normalizeCroatianChars };
 export default function ProfilePage() {
   const { users, refresh } = useUsers();
   const { user: authUser } = useAuth();
+  const { isPaid } = useCurrentMonthPaid(authUser?.id);
   const [profile, setProfile] = useState<TUser | null>(null);
   const [editedProfile, setEditedProfile] = useState<Partial<TUser>>({});
   const [loading, setLoading] = useState(false);
@@ -110,20 +112,20 @@ export default function ProfilePage() {
               <span
                 className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md"
                 style={{
-                  background: profile.paid
+                  background: isPaid
                     ? "oklch(0.44 0.12 155 / 0.12)"
                     : "oklch(0.55 0.20 27 / 0.12)",
-                  color: profile.paid
+                  color: isPaid
                     ? "oklch(0.35 0.10 155)"
                     : "oklch(0.45 0.18 27)",
                 }}
               >
-                {profile.paid ? (
+                {isPaid ? (
                   <CheckCircle2 className="w-3 h-3" />
                 ) : (
                   <AlertCircle className="w-3 h-3" />
                 )}
-                {profile.paid ? "Članarina plaćena" : "Članarina nije plaćena"}
+                {isPaid ? "Članarina plaćena" : "Članarina nije plaćena"}
               </span>
             </div>
           </div>

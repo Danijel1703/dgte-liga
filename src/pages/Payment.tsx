@@ -2,6 +2,7 @@ import { CheckCircle2, Copy, AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { useCurrentMonthPaid } from "../hooks/useCurrentMonthPaid";
 import { useAuth } from "../providers/AuthProvider";
 import { useUsers } from "../providers/UsersProvider";
 
@@ -59,13 +60,13 @@ export default function Payment() {
     () => users.find((u) => u.user_id === user?.id),
     [user, users]
   );
+  const { isPaid } = useCurrentMonthPaid(user?.id);
 
   const now = new Date();
   const currentMonthName = [
     "siječnja", "veljače", "ožujka", "travnja", "svibnja", "lipnja",
     "srpnja", "kolovoza", "rujna", "listopada", "studenog", "prosinca",
   ][now.getMonth()];
-  const isPaid = currentUser?.paid;
 
   return (
     <div className="container max-w-xl mx-auto py-10 px-4">
