@@ -9,11 +9,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import dayjs from "dayjs";
 import { reverse, sortBy, sum } from "lodash-es";
 import { useEffect, useState } from "react";
 import { useLoader } from "../providers/Loader";
 import { useUsers } from "../providers/UsersProvider";
-import type { TCupGroup, TCupMatch, TMatch, TSet } from "../types";
+import type { TCupGroup, TCupMatch, TGroup, TMatch, TSet } from "../types";
 import { supabase } from "../utils/supabase";
 import {
   calculateCupPointsByUserId,
@@ -118,24 +119,47 @@ export const Rankings = () => {
   const initialize = async () => {
     setLoading(true);
     setDataLoading(true);
-    const [{ data: matchesData }, { data: cupGroupsData }, { data: cupMatchesData }] =
-      await Promise.all([
-        // is_deleted must be filtered here: soft-deleted matches would
-        // otherwise still award wins, points and gems on the rank list.
-        supabase
-          .from("match")
-          .select("*, group (*, group_member (*))")
-          .eq("is_deleted", false),
-        supabase
-          .from("cup_group")
-          .select("*, members:cup_group_member (*), cup!inner (is_deleted)")
-          .eq("is_deleted", false)
-          .eq("members.is_deleted", false)
-          .eq("cup.is_deleted", false),
-        supabase.from("cup_match").select("*").eq("is_deleted", false),
-      ]);
+
+    const startOfMonth = dayjs().startOf("month");
+    const endOfMonth = dayjs().endOf("month");
+
+    const [
+      { data: matchesData },
+      { data: cupGroupsData },
+      { data: cupMatchesData },
+      { data: monthGroupsData },
+    ] = await Promise.all([
+      // is_deleted must be filtered here: soft-deleted matches would
+      // otherwise still award wins, points and gems on the rank list.
+      supabase
+        .from("match")
+        .select("*, group (*, group_member (*))")
+        .eq("is_deleted", false),
+      supabase
+        .from("cup_group")
+        .select("*, members:cup_group_member (*), cup!inner (is_deleted)")
+        .eq("is_deleted", false)
+        .eq("members.is_deleted", false)
+        .eq("cup.is_deleted", false),
+      supabase.from("cup_match").select("*").eq("is_deleted", false),
+      // Active league players = assigned to a group created this month.
+      supabase
+        .from("group")
+        .select("*, members:group_member (*)")
+        .eq("is_deleted", false)
+        .eq("members.is_deleted", false)
+        .gte("created_at", startOfMonth.toISOString())
+        .lte("created_at", endOfMonth.toISOString()),
+    ]);
 
     const allMatches = (matchesData || []) as TMatch[];
+
+    const activeUserIds = new Set<string>();
+    for (const group of (monthGroupsData || []) as TGroup[]) {
+      for (const member of group.members ?? []) {
+        if (member.user_id) activeUserIds.add(member.user_id);
+      }
+    }
 
     // Points are computed per cup and then summed. Cups must be kept apart:
     // calculateCupPoints emits one row per player, so pooling several cups
@@ -165,6 +189,8 @@ export const Rankings = () => {
     const items: TRankItem[] = [];
 
     for (const user of users) {
+      if (user.is_deleted || !activeUserIds.has(user.user_id)) continue;
+
       const userMatches = allMatches.filter(
         (m) => m.player_one_id === user.user_id || m.player_two_id === user.user_id
       );
@@ -201,11 +227,7 @@ export const Rankings = () => {
       });
     }
 
-    // A cup-only participant has no league matches, so cup points alone must
-    // be enough to appear on the list.
-    setRankings(
-      items.filter((i) => (i.matchesPlayed > 0 || i.cupPoints > 0) && !i.isDeleted)
-    );
+    setRankings(items);
     setLoading(false);
     setDataLoading(false);
   };
@@ -226,7 +248,9 @@ export const Rankings = () => {
     <div className="container max-w-5xl mx-auto py-8 px-4">
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Rang lista</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Poredak igrača po ukupnim bodovima (liga + kup)</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Aktivni igrači ovog mjeseca · ukupni bodovi (liga + kup)
+        </p>
       </div>
 
       {/* Podium — top 1-3 */}
