@@ -188,11 +188,20 @@ export default function Matches() {
             (m.player_one_id === user.id || m.player_two_id === user.id)
         )
         .slice()
-        .sort((a, b) => (a.round ?? 0) - (b.round ?? 0));
+        .sort((a, b) => {
+          if (a.round != null && b.round != null && a.round !== b.round) {
+            return a.round - b.round;
+          }
+          return (a.created_at ?? "").localeCompare(b.created_at ?? "");
+        });
 
+      // September (and older) fixtures were saved without `round`, so a
+      // round === currentWeek lookup finds nothing and used to show a bye.
       const weekMatch =
         myMatches.find((m) => m.round === currentWeek) ??
-        myMatches.find((m) => (m.round ?? 0) >= currentWeek);
+        myMatches.find((m) => m.round != null && m.round >= currentWeek) ??
+        myMatches[currentWeek - 1] ??
+        myMatches[0];
       if (!weekMatch) continue;
 
       const opponentId =
