@@ -1,4 +1,4 @@
-import { Pencil, RefreshCw, Trash2, Swords, Calendar, Coffee, CopyMinus } from "lucide-react";
+import { Pencil, RefreshCw, Trash2, Swords, Calendar, CopyMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -173,48 +173,42 @@ export default function Matches() {
       g.members.some((m) => m.user_id === user.id)
     );
 
+    const LEAGUE_WEEKS = 3;
+
     for (const group of playerGroups) {
       const groupCreated = dayjs(group.created_at);
       const daysSinceCreation = today.diff(groupCreated, "day");
       const currentWeek = Math.floor(daysSinceCreation / 7) + 1;
+      if (currentWeek < 1 || currentWeek > LEAGUE_WEEKS) continue;
 
-      // Calculate total rounds for this group
-      const memberCount = group.members.length;
-      const totalRounds = memberCount % 2 === 0 ? memberCount - 1 : memberCount;
+      const myMatches = allMonthMatches
+        .filter(
+          (m) =>
+            m.group_id === group.id &&
+            (m.player_one_id === user.id || m.player_two_id === user.id)
+        )
+        .slice()
+        .sort((a, b) => (a.round ?? 0) - (b.round ?? 0));
 
-      // Find the match for this round
-      const weekMatch = allMonthMatches.find(
-        (m) =>
-          m.group_id === group.id &&
-          m.round === currentWeek &&
-          (m.player_one_id === user.id || m.player_two_id === user.id)
-      );
+      const weekMatch =
+        myMatches.find((m) => m.round === currentWeek) ??
+        myMatches.find((m) => (m.round ?? 0) >= currentWeek);
+      if (!weekMatch) continue;
 
-      if (weekMatch) {
-        const opponentId =
-          weekMatch.player_one_id === user.id
-            ? weekMatch.player_two_id
-            : weekMatch.player_one_id;
-        const opponent = players.find((p) => p.user_id === opponentId);
-        if (opponent) {
-          results.push({
-            opponent,
-            match: weekMatch,
-            group,
-            currentWeek,
-            totalRounds,
-          });
-        }
-      } else if (currentWeek >= 1 && currentWeek <= totalRounds) {
-        // Player has a bye this week (odd group)
-        results.push({
-          opponent: null as unknown as TUser,
-          match: null as unknown as JoinedMatch,
-          group,
-          currentWeek,
-          totalRounds,
-        });
-      }
+      const opponentId =
+        weekMatch.player_one_id === user.id
+          ? weekMatch.player_two_id
+          : weekMatch.player_one_id;
+      const opponent = players.find((p) => p.user_id === opponentId);
+      if (!opponent) continue;
+
+      results.push({
+        opponent,
+        match: weekMatch,
+        group,
+        currentWeek: weekMatch.round ?? currentWeek,
+        totalRounds: LEAGUE_WEEKS,
+      });
     }
 
     return results;
@@ -406,8 +400,7 @@ export default function Matches() {
       {weeklyOpponents.length > 0 && (
         <div className="mb-6 space-y-3">
           {weeklyOpponents.map((wo) => {
-            const isBye = !wo.opponent;
-            const isMatchCompleted = wo.match?.status === "played" || wo.match?.status === "surrendered";
+            const isMatchCompleted = wo.match.status === "played" || wo.match.status === "surrendered";
 
             return (
               <Card
@@ -427,7 +420,7 @@ export default function Matches() {
                   <div className="flex items-center gap-2 mb-4">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      Tjedan {wo.currentWeek} od {wo.totalRounds}
+                      Tjedan {wo.match.round ?? wo.currentWeek} od 3
                     </span>
                     <span
                       className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white ml-auto"
@@ -437,86 +430,65 @@ export default function Matches() {
                     </span>
                   </div>
 
-                  {isBye ? (
-                    /* Bye week */
-                    <div className="flex items-center gap-3 py-3">
-                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                        <Coffee className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-muted-foreground">
-                          Slobodan tjedan
-                        </p>
-                        <p className="text-xs text-muted-foreground/70">
-                          Nemaš protivnika ovog tjedna u ovoj grupi
-                        </p>
-                      </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                      <PlayerAvatar
+                        firstName={player!.first_name}
+                        lastName={player!.last_name}
+                        size="lg"
+                      />
+                      <p className="text-sm font-bold text-center leading-tight">
+                        {player!.first_name}
+                        <br />
+                        {player!.last_name}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">Ti</p>
                     </div>
-                  ) : (
-                    /* VS display — stacked vertically so names are always readable */
-                    <div className="flex items-center justify-between gap-2">
-                      {/* Current player */}
-                      <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-                        <PlayerAvatar
-                          firstName={player!.first_name}
-                          lastName={player!.last_name}
-                          size="lg"
-                        />
-                        <p className="text-sm font-bold text-center leading-tight">
-                          {player!.first_name}
-                          <br />
-                          {player!.last_name}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">Ti</p>
-                      </div>
 
-                      {/* VS badge */}
-                      <div className="flex flex-col items-center gap-1 flex-shrink-0 px-1">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Swords className="w-5 h-5 text-primary" />
-                        </div>
-                        {isMatchCompleted ? (
-                          <span className="text-xs font-bold text-emerald-600">
-                            {calculateSetResultForPlayer(wo.match, user!.id)}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                            VS
-                          </span>
-                        )}
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0 px-1">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Swords className="w-5 h-5 text-primary" />
                       </div>
+                      {isMatchCompleted ? (
+                        <span className="text-xs font-bold text-emerald-600">
+                          {calculateSetResultForPlayer(wo.match, user!.id)}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                          VS
+                        </span>
+                      )}
+                    </div>
 
-                      {/* Opponent */}
-                      <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-                        <PlayerAvatar
-                          firstName={wo.opponent.first_name}
-                          lastName={wo.opponent.last_name}
-                          size="lg"
-                        />
-                        <p className="text-sm font-bold text-center leading-tight">
-                          {wo.opponent.first_name}
-                          <br />
-                          {wo.opponent.last_name}
-                        </p>
-                        <Badge
-                          variant="secondary"
-                          className={
-                            wo.match.status === "surrendered"
-                              ? "bg-amber-100 text-amber-700 text-[10px]"
-                              : isMatchCompleted
-                              ? "bg-emerald-100 text-emerald-700 text-[10px]"
-                              : "bg-muted text-muted-foreground text-[10px]"
-                          }
-                        >
-                          {wo.match.status === "surrendered"
-                            ? "Predaja"
+                    <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                      <PlayerAvatar
+                        firstName={wo.opponent.first_name}
+                        lastName={wo.opponent.last_name}
+                        size="lg"
+                      />
+                      <p className="text-sm font-bold text-center leading-tight">
+                        {wo.opponent.first_name}
+                        <br />
+                        {wo.opponent.last_name}
+                      </p>
+                      <Badge
+                        variant="secondary"
+                        className={
+                          wo.match.status === "surrendered"
+                            ? "bg-amber-100 text-amber-700 text-[10px]"
                             : isMatchCompleted
-                            ? "Završen"
-                            : "Čeka"}
-                        </Badge>
-                      </div>
+                            ? "bg-emerald-100 text-emerald-700 text-[10px]"
+                            : "bg-muted text-muted-foreground text-[10px]"
+                        }
+                      >
+                        {wo.match.status === "surrendered"
+                          ? "Predaja"
+                          : isMatchCompleted
+                          ? "Završen"
+                          : "Čeka"}
+                      </Badge>
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             );
