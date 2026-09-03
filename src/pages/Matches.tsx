@@ -33,6 +33,7 @@ import { useUsers } from "../providers/UsersProvider";
 import type { TGroup, TMatch, TUser } from "../types";
 import { supabase } from "../utils/supabase";
 import { generateSchedule } from "../utils/generateSchedule";
+import { assignMatchRounds } from "../utils/assignMatchRounds";
 import { findDuplicateMatchIdsToDelete } from "../utils/dedupeMonthMatches";
 import { EditMatchModal } from "../components/EditMatchModal";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
@@ -70,6 +71,26 @@ type WeeklyOpponent = {
   currentWeek: number;
   totalRounds: number;
 };
+
+function applyGroupRounds(items: JoinedMatch[]): JoinedMatch[] {
+  const byGroup = new Map<string, JoinedMatch[]>();
+  for (const match of items) {
+    const list = byGroup.get(match.group_id) ?? [];
+    list.push(match);
+    byGroup.set(match.group_id, list);
+  }
+  const roundsById = new Map<string, number>();
+  for (const groupMatches of byGroup.values()) {
+    for (const [id, round] of assignMatchRounds(groupMatches)) {
+      roundsById.set(id, round);
+    }
+  }
+  return items.map((match) =>
+    match.id && roundsById.has(match.id)
+      ? { ...match, round: roundsById.get(match.id) }
+      : match
+  );
+}
 
 export default function Matches() {
   const [selectedMatch, setSelectedMatch] = useState<JoinedMatch | null>(null);
@@ -137,11 +158,13 @@ export default function Matches() {
       const items = orderBy(matchesData, ["round", "group.name"]) as JoinedMatch[];
 
       // Filter by month
-      const monthFiltered = items.filter((match) => {
-        if (!match.created_at) return false;
-        const d = dayjs(match.created_at);
-        return d.isAfter(startOfMonth.subtract(1, "ms")) && d.isBefore(endOfMonth.add(1, "ms"));
-      });
+      const monthFiltered = applyGroupRounds(
+        items.filter((match) => {
+          if (!match.created_at) return false;
+          const d = dayjs(match.created_at);
+          return d.isAfter(startOfMonth.subtract(1, "ms")) && d.isBefore(endOfMonth.add(1, "ms"));
+        })
+      );
 
       setAllMonthMatches(monthFiltered);
 
@@ -181,27 +204,12 @@ export default function Matches() {
       const currentWeek = Math.floor(daysSinceCreation / 7) + 1;
       if (currentWeek < 1 || currentWeek > LEAGUE_WEEKS) continue;
 
-      const myMatches = allMonthMatches
-        .filter(
-          (m) =>
-            m.group_id === group.id &&
-            (m.player_one_id === user.id || m.player_two_id === user.id)
-        )
-        .slice()
-        .sort((a, b) => {
-          if (a.round != null && b.round != null && a.round !== b.round) {
-            return a.round - b.round;
-          }
-          return (a.created_at ?? "").localeCompare(b.created_at ?? "");
-        });
-
-      // September (and older) fixtures were saved without `round`, so a
-      // round === currentWeek lookup finds nothing and used to show a bye.
-      const weekMatch =
-        myMatches.find((m) => m.round === currentWeek) ??
-        myMatches.find((m) => m.round != null && m.round >= currentWeek) ??
-        myMatches[currentWeek - 1] ??
-        myMatches[0];
+      const weekMatch = allMonthMatches.find(
+        (m) =>
+          m.group_id === group.id &&
+          m.round === currentWeek &&
+          (m.player_one_id === user.id || m.player_two_id === user.id)
+      );
       if (!weekMatch) continue;
 
       const opponentId =
