@@ -45,7 +45,9 @@ export default function Cups() {
 
     const { data, error } = await supabase
       .from("cup")
-      .select("*, cup_group (id, is_deleted, cup_group_member (user_id, is_deleted))")
+      .select(
+        "*, cup_group (id, is_deleted, cup_group_member (user_id, is_deleted)), cup_participant (user_id, is_deleted)"
+      )
       .eq("is_deleted", false)
       .order("played_on", { ascending: false, nullsFirst: false });
 
@@ -57,10 +59,14 @@ export default function Cups() {
           is_deleted: boolean;
           cup_group_member?: Array<{ user_id: string; is_deleted: boolean }>;
         }>;
+        cup_participant?: Array<{ user_id: string; is_deleted: boolean }>;
       };
       setCups(
         ((data ?? []) as TRow[]).map((cup) => {
           const userIds = new Set<string>();
+          for (const entrant of cup.cup_participant ?? []) {
+            if (!entrant.is_deleted) userIds.add(entrant.user_id);
+          }
           for (const group of cup.cup_group ?? []) {
             if (group.is_deleted) continue;
             for (const member of group.cup_group_member ?? []) {

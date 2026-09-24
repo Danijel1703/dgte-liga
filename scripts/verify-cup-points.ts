@@ -11,6 +11,7 @@
  */
 import type { TCupGroup, TCupMatch, TCupStage } from "../src/types";
 import { calculateCupPoints, cupGroupStandings } from "../src/utils/cupPoints";
+import { dealWith } from "../src/utils/dealCupGroups";
 import {
   buildCupGroupMatches,
   planPlayoff,
@@ -438,6 +439,19 @@ console.log("\nThree groups of four is 18 round-robin matches");
     (m) => m.cup_group_id === "g1" && (m.player_one_id === "a" || m.player_two_id === "a")
   ).length;
   check("each player has 3 matches", appearances, 3);
+}
+
+console.log("\nDraw deals every player once, four to a group");
+{
+  const ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"];
+  const groups = dealWith(ids, 4, () => 0);
+  check("three groups", groups.length, 3);
+  check("four each", groups.map((g) => g.length), [4, 4, 4]);
+  check(
+    "nobody missing or repeated",
+    [...groups.flat()].sort(),
+    [...ids].sort()
+  );
 }
 
 console.log(

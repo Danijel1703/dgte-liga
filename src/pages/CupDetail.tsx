@@ -5,6 +5,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Shuffle,
   Trophy,
   Users,
   Wand2,
@@ -59,6 +60,11 @@ import {
   resolveCupKnockoutGames,
 } from "../utils/cupDisplay";
 import {
+  CUP_DRAW_COLORS,
+  CUP_DRAW_GROUP_SIZE,
+  dealIntoGroups,
+} from "../utils/dealCupGroups";
+import {
   buildCupGroupMatches,
   buildKnockoutSkeleton,
   planPlayoff,
@@ -66,6 +72,14 @@ import {
   type TCupGroupStandingSeed,
 } from "../utils/generateCupSchedule";
 import { supabase } from "../utils/supabase";
+
+function matchesNoun(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return "meč";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "meča";
+  return "mečeva";
+}
 
 export default function CupDetail() {
   const { id: cupId } = useParams<{ id: string }>();
@@ -77,6 +91,8 @@ export default function CupDetail() {
   const [cup, setCup] = useState<TCup | null>(null);
   const [groups, setGroups] = useState<TCupGroup[]>([]);
   const [matches, setMatches] = useState<TCupMatch[]>([]);
+  const [entrantIds, setEntrantIds] = useState<string[]>([]);
+  const [drawing, setDrawing] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
 
   const [editCupOpen, setEditCupOpen] = useState(false);
@@ -109,7 +125,7 @@ export default function CupDetail() {
     setLoading(true);
     setDataLoading(true);
 
-    const [cupRes, groupRes, matchRes] = await Promise.all([
+    const [cupRes, groupRes, matchRes, entrantRes] = await Promise.all([
       supabase.from("cup").select("*").eq("id", cupId).eq("is_deleted", false).maybeSingle(),
       supabase
         .from("cup_group")
@@ -123,15 +139,21 @@ export default function CupDetail() {
         .select("*")
         .eq("cup_id", cupId)
         .eq("is_deleted", false),
+      supabase
+        .from("cup_participant")
+        .select("user_id")
+        .eq("cup_id", cupId)
+        .eq("is_deleted", false),
     ]);
 
-    if (cupRes.error || groupRes.error || matchRes.error) {
+    if (cupRes.error || groupRes.error || matchRes.error || entrantRes.error) {
       toast.error("Greška pri učitavanju kupa.");
     }
 
     setCup((cupRes.data as TCup) ?? null);
     setGroups(((groupRes.data ?? []) as TCupGroup[]).map((g) => ({ ...g, members: g.members ?? [] })));
     setMatches((matchRes.data ?? []) as TCupMatch[]);
+    setEntrantIds(((entrantRes.data ?? []) as Array<{ user_id: string }>).map((row) => row.user_id));
 
     setLoading(false);
     setDataLoading(false);
@@ -158,10 +180,23 @@ export default function CupDetail() {
   }, [groups]);
 
   const participantIds = useMemo(() => {
-    const ids = new Set<string>();
+    const ids = new Set<string>(entrantIds);
     for (const g of groups) for (const m of g.members) ids.add(m.user_id);
     return ids;
-  }, [groups]);
+  }, [entrantIds, groups]);
+
+  const entrantPlayers = useMemo(
+    () =>
+      entrantIds
+        .map((id) => playerById.get(id))
+        .filter((p): p is TUser => !!p)
+        .sort(
+          (a, b) =>
+            a.last_name.localeCompare(b.last_name, "hr") ||
+            a.first_name.localeCompare(b.first_name, "hr")
+        ),
+    [entrantIds, playerById]
+  );
 
   const participants = useMemo(
     () => players.filter((p) => participantIds.has(p.user_id)),
@@ -373,6 +408,75 @@ export default function CupDetail() {
     await initialize();
   };
 
+  /**
+   * Deals the pre-filled entrants into groups of four. Runs in the browser
+   * on click so the draw the admin films is the one that gets saved.
+   * Allowed again only until a group schedule exists.
+   */
+  const handleRandomizeGroups = async () => {
+    if (!cupId || drawing) return;
+    if (groupMatches.length > 0) {
+      toast.error("Raspored je već generiran. Skupine se više ne mogu miješati.");
+      return;
+    }
+    const ids = entrantIds.length > 0 ? entrantIds : Array.from(participantIds);
+    if (ids.length < CUP_DRAW_GROUP_SIZE) {
+      toast.error(`Za ždrijeb treba barem ${CUP_DRAW_GROUP_SIZE} sudionika.`);
+      return;
+    }
+
+    setDrawing(true);
+    try {
+      const dealt = dealIntoGroups(ids, CUP_DRAW_GROUP_SIZE);
+      const existingIds = groups.map((g) => g.id).filter((id): id is string => !!id);
+      if (existingIds.length > 0) {
+        await supabase.from("cup_group_member").update({ is_deleted: true }).in("cup_group_id", existingIds);
+        await supabase.from("cup_match").update({ is_deleted: true }).in("cup_group_id", existingIds);
+        const { error: clearErr } = await supabase
+          .from("cup_group")
+          .update({ is_deleted: true })
+          .in("id", existingIds);
+        if (clearErr) {
+          toast.error("Stare skupine nisu obrisane.");
+          return;
+        }
+      }
+
+      for (let i = 0; i < dealt.length; i++) {
+        const { data, error } = await supabase
+          .from("cup_group")
+          .insert({
+            cup_id: cupId,
+            name: `Skupina ${i + 1}`,
+            color: CUP_DRAW_COLORS[i % CUP_DRAW_COLORS.length],
+            sort_order: (i + 1) * 10,
+          })
+          .select("id")
+          .single();
+        if (error || !data) {
+          toast.error("Ždrijeb nije spremljen.");
+          return;
+        }
+        const { error: memberErr } = await supabase.from("cup_group_member").insert(
+          dealt[i].map((userId) => ({
+            cup_group_id: data.id,
+            user_id: userId,
+            is_deleted: false,
+          }))
+        );
+        if (memberErr) {
+          toast.error("Igrači nisu raspoređeni.");
+          return;
+        }
+      }
+
+      toast.success("Skupine su izvučene.");
+      await initialize();
+    } finally {
+      setDrawing(false);
+    }
+  };
+
   const handleSeedKnockout = async () => {
     if (!cupId) return;
     if (hasKnockout) {
@@ -563,10 +667,53 @@ export default function CupDetail() {
 
         {/* ----------------------------------------------------- Skupine */}
         <section className="mb-10">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">
-            Skupine
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+              Skupine
+            </h2>
+            {isAdmin && groupMatches.length === 0 && entrantPlayers.length >= CUP_DRAW_GROUP_SIZE && (
+              <Button
+                onClick={handleRandomizeGroups}
+                disabled={drawing}
+                className="gap-2"
+              >
+                <Shuffle className="w-4 h-4" />
+                {drawing
+                  ? "Izvlačenje..."
+                  : groups.length > 0
+                    ? "Randomiziraj ponovno"
+                    : "Randomiziraj skupine"}
+              </Button>
+            )}
+          </div>
           {groups.length === 0 ? (
+            entrantPlayers.length > 0 ? (
+              <Card className="shadow-sm py-0">
+                <CardContent className="p-4 space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    {entrantPlayers.length} sudionika čeka ždrijeb. Jedan klik dijeli
+                    ih u skupine po {CUP_DRAW_GROUP_SIZE}.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {entrantPlayers.map((p) => (
+                      <div
+                        key={p.user_id}
+                        className="flex items-center gap-2.5 rounded-lg border px-3 py-2"
+                      >
+                        <PlayerAvatar
+                          firstName={p.first_name}
+                          lastName={p.last_name}
+                          size="xs"
+                        />
+                        <span className="text-sm font-medium truncate">
+                          {p.first_name} {p.last_name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
             <EmptyState
               icon={LayoutGrid}
               title="Nema skupina"
@@ -586,8 +733,9 @@ export default function CupDetail() {
                 ) : undefined
               }
             />
+            )
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`grid grid-cols-1 gap-4 ${groups.length >= 3 ? "lg:grid-cols-3" : "md:grid-cols-2"}`}>
               {groups.map((group) => {
                 const standings = cupGroupStandings(group, matches);
                 return (
@@ -714,87 +862,86 @@ export default function CupDetail() {
                 Raspored skupina još nije generiran
               </div>
             ) : (
-              <Card className="shadow-sm overflow-hidden py-0">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/40 hover:bg-muted/40">
-                          <TableHead className="font-semibold hidden sm:table-cell">
-                            Skupina
-                          </TableHead>
-                          <TableHead className="font-semibold">Igrač 1</TableHead>
-                          <TableHead className="text-center font-semibold">
-                            Rezultat
-                          </TableHead>
-                          <TableHead className="font-semibold">Igrač 2</TableHead>
-                          <TableHead className="font-semibold">Pobjednik</TableHead>
-                          {isAdmin && <TableHead className="w-10" />}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {groupMatches.map((match) => {
-                          const hasScore =
-                            match.player_one_games !== null &&
-                            match.player_two_games !== null;
-                          const isTieBreak =
-                            hasScore &&
-                            match.player_one_games === match.player_two_games &&
-                            !!match.winner_id;
-                          return (
-                            <TableRow
-                              key={match.id}
-                              className="hover:bg-muted/20 transition-colors"
-                            >
-                              <TableCell className="text-xs text-muted-foreground hidden sm:table-cell whitespace-nowrap">
-                                {groupNameById.get(match.cup_group_id ?? "") ?? "—"}
-                              </TableCell>
-                              <TableCell className="text-sm whitespace-nowrap">
-                                {nameOf(match.player_one_id)}
-                              </TableCell>
-                              <TableCell className="text-center whitespace-nowrap">
-                                <span className="font-mono font-bold text-sm">
-                                  {hasScore
-                                    ? `${match.player_one_games} : ${match.player_two_games}`
-                                    : "–"}
+              <div className={`grid grid-cols-1 gap-4 ${groups.length >= 3 ? "lg:grid-cols-3" : "md:grid-cols-2"}`}>
+                {groups.map((group) => {
+                  const rows = groupMatches
+                    .filter((match) => match.cup_group_id === group.id)
+                    .sort((a, b) => (a.round ?? 0) - (b.round ?? 0));
+                  if (rows.length === 0) return null;
+                  return (
+                    <Card key={group.id} className="shadow-sm overflow-hidden py-0">
+                      <div className="h-1" style={{ background: group.color }} />
+                      <CardContent className="p-0">
+                        <div className="flex items-center gap-2 px-3 py-2.5 border-b">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{ background: group.color }}
+                          />
+                          <span className="font-bold text-sm">{group.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            · {rows.length} {matchesNoun(rows.length)}
+                          </span>
+                        </div>
+                        <div>
+                          {rows.map((match) => {
+                            const hasScore =
+                              match.player_one_games !== null &&
+                              match.player_two_games !== null;
+                            const isTieBreak =
+                              hasScore &&
+                              match.player_one_games === match.player_two_games &&
+                              !!match.winner_id;
+                            const oneWon = match.winner_id === match.player_one_id;
+                            const twoWon = match.winner_id === match.player_two_id;
+                            return (
+                              <div
+                                key={match.id}
+                                className="flex items-center gap-2 px-3 py-2.5 border-b last:border-b-0"
+                              >
+                                <span
+                                  className={`flex-1 min-w-0 text-sm truncate ${
+                                    oneWon ? "font-semibold" : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {nameOf(match.player_one_id)}
                                 </span>
-                                {isTieBreak && (
-                                  <Badge className="ml-1.5 text-[10px] bg-amber-100 text-amber-700 border-0 hover:bg-amber-100">
-                                    TB
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-sm whitespace-nowrap">
-                                {nameOf(match.player_two_id)}
-                              </TableCell>
-                              <TableCell className="text-sm whitespace-nowrap">
-                                {match.winner_id ? (
-                                  <span className="font-semibold">
-                                    {nameOf(match.winner_id)}
+                                <div className="shrink-0 text-center">
+                                  <span className="font-mono font-bold text-sm">
+                                    {hasScore
+                                      ? `${match.player_one_games}:${match.player_two_games}`
+                                      : "–"}
                                   </span>
-                                ) : (
-                                  <span className="text-muted-foreground">Čeka</span>
-                                )}
-                              </TableCell>
-                              {isAdmin && (
-                                <TableCell>
+                                  {isTieBreak && (
+                                    <span className="block text-[10px] font-bold text-amber-700">
+                                      TB
+                                    </span>
+                                  )}
+                                </div>
+                                <span
+                                  className={`flex-1 min-w-0 text-sm truncate text-right ${
+                                    twoWon ? "font-semibold" : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {nameOf(match.player_two_id)}
+                                </span>
+                                {isAdmin && (
                                   <button
                                     onClick={() => setSelectedMatch(match)}
-                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
                                     aria-label="Uredi rezultat"
                                   >
                                     <Pencil className="w-3.5 h-3.5" />
                                   </button>
-                                </TableCell>
-                              )}
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </section>
         )}
