@@ -102,6 +102,14 @@ export type TCup = {
   name: string;
   played_on: string | null;
   status: TCupStatus;
+  /**
+   * Games a group-stage set is played to. A level score at this number
+   * (4:4, 6:6, …) is a tie-break. Optional so rows from before migration 003
+   * still type-check; the UI falls back to 4.
+   */
+  group_games?: number;
+  /** Games a playoff set is played to. Fallback is 6. */
+  knockout_games?: number;
   is_deleted: boolean;
   created_at?: string;
 };

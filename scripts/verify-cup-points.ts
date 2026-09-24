@@ -11,7 +11,13 @@
  */
 import type { TCupGroup, TCupMatch, TCupStage } from "../src/types";
 import { calculateCupPoints, cupGroupStandings } from "../src/utils/cupPoints";
-import { buildCupGroupMatches, seedSemifinals } from "../src/utils/generateCupSchedule";
+import {
+  buildCupGroupMatches,
+  planPlayoff,
+  seedSemifinals,
+  type TCupGroupStandingSeed,
+  type TCupStandingPlayer,
+} from "../src/utils/generateCupSchedule";
 
 const CUP_ID = "cup-1";
 const G1 = "skupina-1";
@@ -213,12 +219,26 @@ console.log("\nGroup standings order");
   );
 }
 
+function standingSeed(group: TCupGroup, matches: TCupMatch[]): TCupGroupStandingSeed {
+  return {
+    cupGroupId: group.id!,
+    name: group.name,
+    sortOrder: group.sort_order,
+    ordered: cupGroupStandings(group, matches).map((row) => ({
+      userId: row.userId,
+      groupWins: row.groupWins,
+      gameDifference: row.gameDifference,
+      gamesFor: row.gamesFor,
+    })),
+  };
+}
+
 console.log("\nCross-seeded semifinals reproduce the real pairings");
 {
   const all = [...groupStage];
   const pairs = seedSemifinals([
-    { cupGroupId: G1, orderedUserIds: cupGroupStandings(groups[0], all).map((r) => r.userId) },
-    { cupGroupId: G2, orderedUserIds: cupGroupStandings(groups[1], all).map((r) => r.userId) },
+    standingSeed(groups[0], all),
+    standingSeed(groups[1], all),
   ]);
   check("pairings", pairs, [
     [LUKA, DAMJAN],
@@ -314,6 +334,110 @@ console.log("\nFixture generation");
   check("rounds are 1-indexed", Math.min(...fixtures.map((m) => m.round!)), 1);
   check("five rounds per group", Math.max(...fixtures.map((m) => m.round!)), 5);
   check("scores start empty", fixtures.every((m) => m.player_one_games === null), true);
+}
+
+function player(
+  userId: string,
+  groupWins: number,
+  gameDifference: number,
+  gamesFor: number
+): TCupStandingPlayer {
+  return { userId, groupWins, gameDifference, gamesFor };
+}
+
+function groupSeed(
+  cupGroupId: string,
+  name: string,
+  sortOrder: number,
+  ordered: TCupStandingPlayer[]
+): TCupGroupStandingSeed {
+  return { cupGroupId, name, sortOrder, ordered };
+}
+
+console.log("\nThree groups: winners are seeds 1–3, best runner-up is seed 4");
+{
+  // The runner-up of B has a better record than the winner of C, and still
+  // stays the 4th seed. A group winner is never dropped behind a runner-up.
+  const plan = planPlayoff([
+    groupSeed("A", "Skupina A", 10, [
+      player("wA", 3, 6, 18),
+      player("sA", 2, 1, 14),
+    ]),
+    groupSeed("B", "Skupina B", 20, [
+      player("wB", 3, 2, 16),
+      player("sB", 3, 8, 17),
+    ]),
+    groupSeed("C", "Skupina C", 30, [
+      player("wC", 2, 1, 12),
+      player("sC", 2, 4, 13),
+    ]),
+  ]);
+  check(
+    "pairings",
+    plan.semifinals.map((pair) => [pair[0].userId, pair[1].userId]),
+    [
+      ["wA", "sB"],
+      ["wB", "wC"],
+    ]
+  );
+  check("seed 4 note", plan.semifinals[0][1].note.includes("najbolji drugoplasirani"), true);
+  check("seed 4 group", plan.semifinals[0][1].note.includes("Skupina B"), true);
+}
+
+console.log("\nTied runner-ups: the earlier group qualifies");
+{
+  const plan = planPlayoff([
+    groupSeed("B", "Skupina B", 20, [player("wB", 3, 1, 12), player("sB", 2, 4, 10)]),
+    groupSeed("A", "Skupina A", 10, [player("wA", 3, 1, 12), player("sA", 2, 4, 10)]),
+    groupSeed("C", "Skupina C", 30, [player("wC", 3, 1, 12), player("sC", 1, 0, 8)]),
+  ]);
+  check("best second is from Skupina A", plan.semifinals[0][1].userId, "sA");
+}
+
+console.log("\nFour group winners fill the playoff");
+{
+  const pairs = seedSemifinals([
+    groupSeed("A", "A", 10, [player("wA", 2, 1, 10)]),
+    groupSeed("B", "B", 20, [player("wB", 3, 5, 12)]),
+    groupSeed("C", "C", 30, [player("wC", 3, 2, 11)]),
+    groupSeed("D", "D", 40, [player("wD", 1, 0, 8)]),
+  ]);
+  check("1 vs 4 and 2 vs 3", pairs, [
+    ["wB", "wD"],
+    ["wC", "wA"],
+  ]);
+}
+
+console.log("\nFive groups cannot build a four-player playoff");
+{
+  let message = "";
+  try {
+    planPlayoff([
+      groupSeed("A", "A", 10, [player("a", 1, 0, 1)]),
+      groupSeed("B", "B", 20, [player("b", 1, 0, 1)]),
+      groupSeed("C", "C", 30, [player("c", 1, 0, 1)]),
+      groupSeed("D", "D", 40, [player("d", 1, 0, 1)]),
+      groupSeed("E", "E", 50, [player("e", 1, 0, 1)]),
+    ]);
+  } catch (e) {
+    message = e instanceof Error ? e.message : "";
+  }
+  check("rejects five groups", message.length > 0, true);
+}
+
+console.log("\nThree groups of four is 18 round-robin matches");
+{
+  const ids = ["a", "b", "c", "d"];
+  const fixtures = buildCupGroupMatches(CUP_ID, [
+    { cupGroupId: "g1", userIds: ids },
+    { cupGroupId: "g2", userIds: ids },
+    { cupGroupId: "g3", userIds: ids },
+  ]);
+  check("18 fixtures", fixtures.length, 18);
+  const appearances = fixtures.filter(
+    (m) => m.cup_group_id === "g1" && (m.player_one_id === "a" || m.player_two_id === "a")
+  ).length;
+  check("each player has 3 matches", appearances, 3);
 }
 
 console.log(

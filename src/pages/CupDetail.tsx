@@ -43,7 +43,7 @@ import CupGroupModal, {
   type TCupGroupDraftMember,
 } from "../components/CupGroupModal";
 import CupMatchModal, { type TCupMatchPatch } from "../components/CupMatchModal";
-import CupModal from "../components/CupModal";
+import CupModal, { type TCupFormValues } from "../components/CupModal";
 import { useAuth } from "../providers/AuthProvider";
 import { useLoader } from "../providers/Loader";
 import { useUsers } from "../providers/UsersProvider";
@@ -54,11 +54,16 @@ import {
   CUP_STAGE_LABELS,
   CUP_STATUS_BADGE,
   formatCupDate,
+  formatCupSetLength,
+  resolveCupGroupGames,
+  resolveCupKnockoutGames,
 } from "../utils/cupDisplay";
 import {
   buildCupGroupMatches,
   buildKnockoutSkeleton,
-  seedSemifinals,
+  planPlayoff,
+  playoffRule,
+  type TCupGroupStandingSeed,
 } from "../utils/generateCupSchedule";
 import { supabase } from "../utils/supabase";
 
@@ -190,12 +195,47 @@ export default function CupDetail() {
   const allGroupMatchesDecided =
     groupMatches.length > 0 && groupMatches.every((m) => !!m.winner_id);
 
+  const playoffSeeds = useMemo<TCupGroupStandingSeed[]>(
+    () =>
+      groups
+        .filter((g) => g.id)
+        .map((g) => ({
+          cupGroupId: g.id!,
+          name: g.name,
+          sortOrder: g.sort_order,
+          ordered: cupGroupStandings(g, matches).map((row) => ({
+            userId: row.userId,
+            groupWins: row.groupWins,
+            gameDifference: row.gameDifference,
+            gamesFor: row.gamesFor,
+          })),
+        })),
+    [groups, matches]
+  );
+
+  const playoffPreview = useMemo(() => {
+    if (!allGroupMatchesDecided || hasKnockout) return null;
+    try {
+      return { plan: planPlayoff(playoffSeeds), error: null as string | null };
+    } catch (e) {
+      return {
+        plan: null,
+        error: e instanceof Error ? e.message : "Playoff se ne može složiti.",
+      };
+    }
+  }, [allGroupMatchesDecided, hasKnockout, playoffSeeds]);
+
   // ---------------------------------------------------------------- actions
-  const onCupEdit = async (name: string, playedOn: string | null) => {
+  const onCupEdit = async (values: TCupFormValues) => {
     if (!cupId) return;
     const { error } = await supabase
       .from("cup")
-      .update({ name, played_on: playedOn })
+      .update({
+        name: values.name,
+        played_on: values.playedOn,
+        group_games: values.groupGames,
+        knockout_games: values.knockoutGames,
+      })
       .eq("id", cupId);
     if (error) {
       toast.error("Kup nije spremljen.");
@@ -341,13 +381,8 @@ export default function CupDetail() {
     }
 
     try {
-      const pairs = seedSemifinals(
-        groups
-          .filter((g) => g.id)
-          .map((g) => ({
-            cupGroupId: g.id!,
-            orderedUserIds: cupGroupStandings(g, matches).map((r) => r.userId),
-          }))
+      const pairs = planPlayoff(playoffSeeds).semifinals.map(
+        (pair) => [pair[0].userId, pair[1].userId] as [string, string]
       );
       const skeleton = buildKnockoutSkeleton(cupId, pairs);
       const { error } = await supabase.from("cup_match").insert(skeleton);
@@ -487,7 +522,8 @@ export default function CupDetail() {
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {formatCupDate(cup.played_on)} · {participantIds.size} sudionika
+              {formatCupDate(cup.played_on)} · {participantIds.size} sudionika ·{" "}
+              {formatCupSetLength(cup.group_games, cup.knockout_games)}
             </p>
           </div>
           {isAdmin && (
@@ -774,7 +810,7 @@ export default function CupDetail() {
                 <Button
                   size="sm"
                   onClick={handleSeedKnockout}
-                  disabled={!allGroupMatchesDecided}
+                  disabled={!allGroupMatchesDecided || !!playoffPreview?.error}
                   className="gap-2"
                 >
                   <Wand2 className="w-4 h-4" />
@@ -784,12 +820,26 @@ export default function CupDetail() {
             </div>
 
             {!hasKnockout ? (
-              <div className="border-2 border-dashed rounded-xl py-6 text-center text-muted-foreground text-sm">
-                Eliminacijska faza još nije određena
+              <div className="border-2 border-dashed rounded-xl px-4 py-6 text-center text-sm text-muted-foreground space-y-2">
+                <p>Eliminacijska faza još nije određena</p>
+                <p className="text-xs max-w-lg mx-auto">
+                  {playoffPreview?.error ??
+                    playoffPreview?.plan?.summary ??
+                    playoffRule(groups.length)}
+                </p>
                 {!allGroupMatchesDecided && (
-                  <span className="block text-xs mt-1">
-                    Završite sve mečeve u skupinama
-                  </span>
+                  <p className="text-xs">Završite sve mečeve u skupinama</p>
+                )}
+                {playoffPreview?.plan && (
+                  <ul className="text-left text-xs max-w-md mx-auto space-y-1.5 text-foreground pt-1">
+                    {playoffPreview.plan?.semifinals.map((pair, index) => (
+                      <li key={index}>
+                        <span className="font-semibold">Polufinale {index + 1}:</span>{" "}
+                        {nameOf(pair[0].userId)} ({pair[0].note}) —{" "}
+                        {nameOf(pair[1].userId)} ({pair[1].note})
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             ) : (
@@ -959,6 +1009,11 @@ export default function CupDetail() {
               : CUP_STAGE_LABELS[selectedMatch.stage]
           }
           participants={participants}
+          maxGames={
+            selectedMatch.stage === "group"
+              ? resolveCupGroupGames(cup.group_games)
+              : resolveCupKnockoutGames(cup.knockout_games)
+          }
           onClose={() => setSelectedMatch(null)}
           onSave={handleMatchSave}
         />

@@ -168,8 +168,8 @@ export function calculateCupPoints(
         if (winnerId === member.user_id) groupWins += 1;
 
         // Knockout games are excluded entirely: those scores are optional and
-        // played to a different target (6 vs 4), so mixing them into group
-        // standings would make the game difference meaningless.
+        // the set length can differ from the group stage, so mixing them into
+        // group standings would make the game difference meaningless.
         const one = match.player_one_games;
         const two = match.player_two_games;
         if (one === null || two === null) continue;

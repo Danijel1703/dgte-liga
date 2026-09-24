@@ -1,8 +1,46 @@
-import type { TCupMatch, TCupStage, TCupStatus } from "../types";
+import type { TCupStage, TCupStatus } from "../types";
 
-/** Games a cup match is played to: 4 in the group stage, 6 in the knockout. */
-export function maxGamesForStage(stage: TCupMatch["stage"]): number {
-  return stage === "group" ? 4 : 6;
+/** Historical cup: groups to 4, playoff to 6. Used when the columns are absent. */
+export const DEFAULT_CUP_GROUP_GAMES = 4;
+export const DEFAULT_CUP_KNOCKOUT_GAMES = 6;
+/** New cups start as one set to 6 in both phases. */
+export const NEW_CUP_SET_GAMES = 6;
+export const CUP_SET_GAMES_MIN = 1;
+export const CUP_SET_GAMES_MAX = 15;
+
+export function resolveCupGroupGames(value: number | null | undefined): number {
+  return clampCupSetGames(value, DEFAULT_CUP_GROUP_GAMES);
+}
+
+export function resolveCupKnockoutGames(value: number | null | undefined): number {
+  return clampCupSetGames(value, DEFAULT_CUP_KNOCKOUT_GAMES);
+}
+
+function clampCupSetGames(value: number | null | undefined, fallback: number): number {
+  if (value == null || !Number.isFinite(value)) return fallback;
+  const n = Math.round(value);
+  if (n < CUP_SET_GAMES_MIN || n > CUP_SET_GAMES_MAX) return fallback;
+  return n;
+}
+
+/** Croatian noun for a game count: 1 gem, 4 gema, 6 gemova. */
+export function gemsNoun(count: number): string {
+  const abs = Math.abs(Math.trunc(count));
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (mod10 === 1 && mod100 !== 11) return "gem";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "gema";
+  return "gemova";
+}
+
+export function formatCupSetLength(
+  groupGames: number | null | undefined,
+  knockoutGames: number | null | undefined
+): string {
+  const group = resolveCupGroupGames(groupGames);
+  const knockout = resolveCupKnockoutGames(knockoutGames);
+  if (group === knockout) return `set do ${group} ${gemsNoun(group)}`;
+  return `skupine do ${group} ${gemsNoun(group)}, playoff do ${knockout} ${gemsNoun(knockout)}`;
 }
 
 export const CUP_STAGE_LABELS: Record<TCupStage, string> = {

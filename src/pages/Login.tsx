@@ -50,8 +50,10 @@ export default function Login() {
     setLoading(true);
     setError("");
 
+    const typed = normalizeCroatianChars(username.replace(/\s+/g, "")).toLowerCase();
     const user = users.find(
-      (t) => t.first_name.toLowerCase() + t.last_name.toLowerCase() === username
+      (t) =>
+        normalizeCroatianChars(t.first_name + t.last_name).toLowerCase() === typed
     );
 
     if (!user) {
@@ -62,7 +64,7 @@ export default function Login() {
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email: normalizeCroatianChars(user.email),
-      password: username + "123",
+      password: user.first_name.toLowerCase() + user.last_name.toLowerCase() + "123",
     });
 
     if (authError) setError("Korisničko ime netočno, molim vas pokušajte opet.");

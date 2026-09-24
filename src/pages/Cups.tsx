@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import CupModal from "../components/CupModal";
+import CupModal, { type TCupFormValues } from "../components/CupModal";
 import { useAuth } from "../providers/AuthProvider";
 import { useLoader } from "../providers/Loader";
 import { useUsers } from "../providers/UsersProvider";
 import type { TCup } from "../types";
 import { supabase } from "../utils/supabase";
-import { formatCupDate, CUP_STATUS_BADGE } from "../utils/cupDisplay";
+import { formatCupDate, formatCupSetLength, CUP_STATUS_BADGE } from "../utils/cupDisplay";
 
 type TCupListItem = TCup & { participantCount: number };
 
@@ -81,10 +81,15 @@ export default function Cups() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onCupCreate = async (name: string, playedOn: string | null) => {
+  const onCupCreate = async (values: TCupFormValues) => {
     const { data, error } = await supabase
       .from("cup")
-      .insert({ name, played_on: playedOn })
+      .insert({
+        name: values.name,
+        played_on: values.playedOn,
+        group_games: values.groupGames,
+        knockout_games: values.knockoutGames,
+      })
       .select("id")
       .single();
 
@@ -151,6 +156,8 @@ export default function Cups() {
                         <p className="font-bold text-base truncate">{cup.name}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {formatCupDate(cup.played_on)}
+                          {" · "}
+                          {formatCupSetLength(cup.group_games, cup.knockout_games)}
                         </p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />

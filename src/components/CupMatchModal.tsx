@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import type { TCupMatch, TStatus, TUser } from "../types";
-import { maxGamesForStage } from "../utils/cupDisplay";
+import { gemsNoun } from "../utils/cupDisplay";
 
 /** Sentinel for the "no score recorded" option — the score column stays NULL. */
 const NO_SCORE = "none";
@@ -39,6 +39,8 @@ export interface CupMatchModalProps {
   match: TCupMatch | null;
   /** Shown under the title, e.g. "Skupina 1" or "Polufinale". */
   stageLabel: string;
+  /** How many games this set is played to. */
+  maxGames: number;
   /** Everyone in the cup — used for the knockout pairing override. */
   participants: TUser[];
   onClose: () => void;
@@ -59,6 +61,7 @@ export default function CupMatchModal({
   open,
   match,
   stageLabel,
+  maxGames,
   participants,
   onClose,
   onSave,
@@ -87,7 +90,8 @@ export default function CupMatchModal({
   const playerTwo = findUser(playerTwoId);
 
   const isKnockout = match ? match.stage !== "group" : false;
-  const gameOptions = match ? [...Array(maxGamesForStage(match.stage) + 1).keys()] : [];
+  const optionMax = Math.max(maxGames, gamesOne ?? 0, gamesTwo ?? 0);
+  const gameOptions = match ? [...Array(optionMax + 1).keys()] : [];
   const isTied = gamesOne !== null && gamesTwo !== null && gamesOne === gamesTwo;
 
   // Changing a knockout pairing can orphan the recorded winner
@@ -270,7 +274,9 @@ export default function CupMatchModal({
           <div>
             <h3 className="text-sm font-semibold">Rezultat</h3>
             <p className="text-xs text-muted-foreground">
-              Nije obavezno — dovoljno je odabrati pobjednika.
+              Nije obavezno — dovoljno je odabrati pobjednika. Set se igra do{" "}
+              {maxGames} {gemsNoun(maxGames)}; izjednačen rezultat odlučuje
+              tie-break.
             </p>
           </div>
           <div className="flex items-center gap-3">
