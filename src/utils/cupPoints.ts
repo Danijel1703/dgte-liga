@@ -72,6 +72,21 @@ export function resolveCupMatchWinnerId(match: TCupMatch): string | null {
   return null;
 }
 
+/** True once a winner is stored or a non-tied score implies one. */
+export function isCupMatchDecided(match: TCupMatch): boolean {
+  return resolveCupMatchWinnerId(match) !== null;
+}
+
+/**
+ * The generate-knockout button's gate. Scores without `winner_id` still count
+ * — that is how results were entered on Kup 2 — so this uses the same
+ * resolution as standings rather than requiring an explicit winner column.
+ */
+export function areAllGroupMatchesDecided(matches: TCupMatch[]): boolean {
+  const groupMatches = matches.filter((m) => !m.is_deleted && m.stage === "group");
+  return groupMatches.length > 0 && groupMatches.every(isCupMatchDecided);
+}
+
 /** The player of `match` who is not `userId`, or null if userId isn't in it. */
 export function cupOpponentOf(match: TCupMatch, userId: string): string | null {
   if (match.player_one_id === userId) return match.player_two_id;
