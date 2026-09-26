@@ -10,7 +10,12 @@
  * not part of `npm run build`.
  */
 import type { TCupGroup, TCupMatch, TCupStage } from "../src/types";
-import { calculateCupPoints, cupGroupStandings } from "../src/utils/cupPoints";
+import {
+  areAllGroupMatchesDecided,
+  calculateCupPoints,
+  cupGroupStandings,
+  isCupMatchDecided,
+} from "../src/utils/cupPoints";
 import { dealWith } from "../src/utils/dealCupGroups";
 import {
   buildCupGroupMatches,
@@ -439,6 +444,45 @@ console.log("\nThree groups of four is 18 round-robin matches");
     (m) => m.cup_group_id === "g1" && (m.player_one_id === "a" || m.player_two_id === "a")
   ).length;
   check("each player has 3 matches", appearances, 3);
+}
+
+console.log("\nGroup results without winner_id still unlock the playoff");
+{
+  // Kup 2 entered most group scores without tapping the winner control.
+  const scoredNoWinner: TCupMatch = {
+    ...groupMatch(G1, FRAN, PATRICK, 6, 4, FRAN),
+    winner_id: null,
+    status: "waiting",
+  };
+  const surrenderNoScore = {
+    ...groupMatch(G1, ALEN, IVAN, 0, 0, ALEN),
+    player_one_games: null,
+    player_two_games: null,
+    status: "surrendered" as const,
+  };
+  const openMatch = {
+    ...groupMatch(G1, LUKA, FRAN, 0, 0, FRAN),
+    player_one_games: null,
+    player_two_games: null,
+    winner_id: null,
+    status: "waiting" as const,
+  };
+  const tieNoWinner = { ...groupMatch(G1, PATRICK, ALEN, 6, 6, PATRICK), winner_id: null };
+
+  check("score without winner_id is decided", isCupMatchDecided(scoredNoWinner), true);
+  check("surrender without score is decided", isCupMatchDecided(surrenderNoScore), true);
+  check("empty match is not decided", isCupMatchDecided(openMatch), false);
+  check("tied score without winner is not decided", isCupMatchDecided(tieNoWinner), false);
+  check(
+    "all group matches decided from scores",
+    areAllGroupMatchesDecided([scoredNoWinner, surrenderNoScore]),
+    true
+  );
+  check(
+    "one unfinished group match blocks the playoff",
+    areAllGroupMatchesDecided([scoredNoWinner, openMatch]),
+    false
+  );
 }
 
 console.log("\nDraw deals every player once, four to a group");

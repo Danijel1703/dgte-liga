@@ -20,6 +20,7 @@ import {
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import type { TCupMatch, TStatus, TUser } from "../types";
 import { gemsNoun } from "../utils/cupDisplay";
+import { resolveCupMatchWinnerId } from "../utils/cupPoints";
 
 /** Sentinel for the "no score recorded" option — the score column stays NULL. */
 const NO_SCORE = "none";
@@ -101,8 +102,25 @@ export default function CupMatchModal({
     }
   }, [playerOneId, playerTwoId, winnerId]);
 
+  // Entering a non-tied score is entering a result — fill the winner so the
+  // admin does not have to tap it separately. Ties still need an explicit pick.
+  useEffect(() => {
+    if (gamesOne === null || gamesTwo === null || gamesOne === gamesTwo) return;
+    const derived = gamesOne > gamesTwo ? playerOneId : playerTwoId;
+    if (derived) setWinnerId(derived);
+  }, [gamesOne, gamesTwo, playerOneId, playerTwoId]);
+
   const handleSave = async () => {
     if (!match) return;
+    const resolvedWinnerId = resolveCupMatchWinnerId({
+      ...match,
+      player_one_id: playerOneId,
+      player_two_id: playerTwoId,
+      player_one_games: gamesOne,
+      player_two_games: gamesTwo,
+      winner_id: winnerId,
+      is_deleted: false,
+    });
     setSaving(true);
     try {
       await onSave(match, {
@@ -110,9 +128,9 @@ export default function CupMatchModal({
         player_two_id: playerTwoId,
         player_one_games: gamesOne,
         player_two_games: gamesTwo,
-        winner_id: winnerId,
+        winner_id: resolvedWinnerId,
         // A winner with no score is legal — that is the point of this modal.
-        status: winnerId ? (isSurrender ? "surrendered" : "played") : "waiting",
+        status: resolvedWinnerId ? (isSurrender ? "surrendered" : "played") : "waiting",
         is_surrender: isSurrender,
       });
       onClose();

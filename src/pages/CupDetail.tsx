@@ -49,7 +49,12 @@ import { useAuth } from "../providers/AuthProvider";
 import { useLoader } from "../providers/Loader";
 import { useUsers } from "../providers/UsersProvider";
 import type { TCup, TCupGroup, TCupMatch, TUser } from "../types";
-import { calculateCupPoints, cupGroupStandings } from "../utils/cupPoints";
+import {
+  areAllGroupMatchesDecided,
+  calculateCupPoints,
+  cupGroupStandings,
+  resolveCupMatchWinnerId,
+} from "../utils/cupPoints";
 import {
   CUP_PLACEMENT_MEDALS,
   CUP_STAGE_LABELS,
@@ -227,8 +232,7 @@ export default function CupDetail() {
     );
   }, [groups, players, selectedGroup]);
 
-  const allGroupMatchesDecided =
-    groupMatches.length > 0 && groupMatches.every((m) => !!m.winner_id);
+  const allGroupMatchesDecided = areAllGroupMatchesDecided(matches);
 
   const playoffSeeds = useMemo<TCupGroupStandingSeed[]>(
     () =>
@@ -887,12 +891,13 @@ export default function CupDetail() {
                             const hasScore =
                               match.player_one_games !== null &&
                               match.player_two_games !== null;
+                            const decidedWinnerId = resolveCupMatchWinnerId(match);
                             const isTieBreak =
                               hasScore &&
                               match.player_one_games === match.player_two_games &&
-                              !!match.winner_id;
-                            const oneWon = match.winner_id === match.player_one_id;
-                            const twoWon = match.winner_id === match.player_two_id;
+                              !!decidedWinnerId;
+                            const oneWon = decidedWinnerId === match.player_one_id;
+                            const twoWon = decidedWinnerId === match.player_two_id;
                             return (
                               <div
                                 key={match.id}
